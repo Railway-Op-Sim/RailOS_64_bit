@@ -17,6 +17,7 @@
 #include "System.IniFiles.hpp"
 
 #include <map>
+#include <filesystem>
 
 /*! **************************************************************************
  * @class API
@@ -29,7 +30,7 @@
 class API
 {
      private:
-        AnsiString file_path_;
+		std::filesystem::path file_path_;
         std::map<AnsiString, AnsiString*> metadata_str_;
         std::map<AnsiString, bool*> metadata_bool_;
         std::map<AnsiString, int*> metadata_int_;
@@ -39,7 +40,7 @@ class API
         *
         * @param file_name path of INI file to save collected data to
         *********************************************************************/
-        API(const AnsiString& file_name);
+        API(const std::filesystem::path& file_name);
 
         /*! ******************************************************************
         * @brief add pointer to string variable to monitor value

@@ -11,7 +11,7 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 
-API::API(const AnsiString& file_name) {
+API::API(const std::filesystem::path& file_name) {
    file_path_ = file_name;
 
    // Print something if program is opened

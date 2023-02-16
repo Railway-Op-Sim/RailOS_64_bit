@@ -980,7 +980,7 @@ since OA panel only rebuilt every 2 secs when mouseup on panel the train could b
     bool SplitTrainInfo(int Caller, AnsiString TrainInfoStr, AnsiString &HeadCode, AnsiString &Description, int &StartSpeed, int &MaxRunningSpeed, int &Mass,
                         double &MaxBrakeRate, double &PowerAtRail, int &SignallerSpeed, bool GiveMessages);
 /// Checks overall timetable integrity, calls many other specific checking functions, returns true for success
-    bool TimetableIntegrityCheck(int Caller, char *FileName, bool GiveMessages, bool CheckLocationsExistInRailway);
+    bool TimetableIntegrityCheck(int Caller, std::filesystem::path FileName, bool GiveMessages, bool CheckLocationsExistInRailway);
 /// new at v2.4.0 return true if find the train (added at v2.4.0 as can select a removed train in ActionsDueListBox before it updates see LiWinDom error report via Discord on 23/04/20
     bool TrainExistsAtIdent(int Caller, int TrainID);
 /// check whether the two times are within the range in minutes specified and return true if so. For an equal time check MinuteRange = 0;

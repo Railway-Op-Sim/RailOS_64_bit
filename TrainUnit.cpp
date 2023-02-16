@@ -10916,7 +10916,7 @@ AnsiString TTrainController::ControllerGetNewServiceDepartureInfo(int Caller, TA
   F-nshs              Finish & form a shuttle feeder service
 */
 
-bool TTrainController::TimetableIntegrityCheck(int Caller, char *FileName, bool GiveMessages, bool CheckLocationsExistInRailway) // true for success
+bool TTrainController::TimetableIntegrityCheck(int Caller, std::filesystem::path FileName, bool GiveMessages, bool CheckLocationsExistInRailway) // true for success
 {
     // Error messages mainly given in called functions, five are given here - empty file; inability to find a start time; timetable containing
     // a line that is too long; timetable containing too few lines; and timetable failed to open.
@@ -16522,7 +16522,7 @@ TTrain &TTrainController::TrainVectorAt(int Caller, int VecPos)
 
 // ---------------------------------------------------------------------------
 
-void TTrainController::CreateFormattedTimetable(int Caller, AnsiString RailwayTitle, AnsiString TimetableTitle, AnsiString CurDir)
+void TTrainController::CreateFormattedTimetable(int Caller, AnsiString RailwayTitle, AnsiString TimetableTitle, std::filesystem::path CurDir)
 {
     Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",CreateFormattedTimetable");
     AnsiString RetStr = "", PartStr = "";
@@ -16640,22 +16640,13 @@ void TTrainController::CreateFormattedTimetable(int Caller, AnsiString RailwayTi
 
 */
 
-    AnsiString TTFileName = TDateTime::CurrentDateTime().FormatString("dd-mm-yyyy hh.nn.ss");
+	std::filesystem::path TTFileName = TDateTime::CurrentDateTime().FormatString("dd_mm_yyyy_hh_nn_ss");
 
     // format "16/06/2009 20:55:17"
     // avoid characters in filename:=   / \ : * ? " < > |
-    TTFileName = CurDir + "\\Formatted timetables\\Timetable " + TTFileName + "; " + RailwayTitle + "; " + TimetableTitle + ".csv";
+    TTFileName = CurDir / std::filesystem::path{"Formatted_Timetables/Timetable_" + TTFileName + "_" + RailwayTitle + "_" + TimetableTitle + ".csv"};
 
-    AnsiString ShortTTName = "";
-
-    for(int x = TTFileName.Length(); x > 0; x--)
-    {
-        if(TTFileName[x] == '\\')
-        {
-            ShortTTName = TTFileName.SubString(x + 1, TTFileName.Length() - x - 4);
-            break;
-        }
-    }
+	const std::filesystem::path ShortTTName = TTFileName.filename();
 
     ShowMessage("Creates two timetables named " + ShortTTName +
                 " in the 'Formatted timetables' folder, one in service order in '.csv' format, and one in chronological order in '.txt' format");
@@ -17064,9 +17055,9 @@ void TTrainController::CreateFormattedTimetable(int Caller, AnsiString RailwayTi
 
     TTFile.close();
 
-    AnsiString TTFileName2 = TDateTime::CurrentDateTime().FormatString("dd-mm-yyyy hh.nn.ss");
+    std::filesystem::path TTFileName2 = TDateTime::CurrentDateTime().FormatString("dd_mm_yyyy_hh_nn_ss");
 
-    TTFileName2 = CurDir + "\\Formatted timetables\\Timetable " + TTFileName2 + "; " + RailwayTitle + "; " + TimetableTitle + ".txt";
+    TTFileName2 = CurDir / std::filesystem::path{"Formatted_Timetables/Timetable_" + TTFileName2 + "_" + RailwayTitle + "_" + TimetableTitle + ".txt"};
 
     std::ofstream TTFile2(TTFileName2.c_str()); //chronological timetable
 
@@ -17958,8 +17949,8 @@ j) all other finish entries (all link to another service) are ignored as will be
         TLocServiceTimesVector::iterator Ptr1, Ptr2;
 
         //set up the output file
-        AnsiString TTFileName3 = TDateTime::CurrentDateTime().FormatString("dd-mm-yyyy hh.nn.ss");
-        TTFileName3 = CurDir + "\\Formatted timetables\\Conflict Analysis " + TTFileName3 + "; " + RailwayTitle + "; " + TimetableTitle + ".csv";
+		std::string TTFileName3 = TDateTime::CurrentDateTime().FormatString("dd_mm_yyyy_hh_nn_ss");
+		TTFileName3 = CurDir / std::filesystem::path{"Formatted_Timetables/Conflict Analysis"} / std::filesystem::path{TTFileName3 + "_" + RailwayTitle + "_" + TimetableTitle + ".csv"};
 
         std::ofstream TTFile3(TTFileName3.c_str());
 
@@ -17973,7 +17964,7 @@ j) all other finish entries (all link to another service) are ignored as will be
         {
             ShowMessage("No timetabled services found");
             TTFile3.close();
-            DeleteFile(TTFileName3);
+            std::filesystem::remove(TTFileName3);
             Utilities->CallLogPop(2211);
             return(false);
         }
@@ -19369,8 +19360,8 @@ different to the train's front element name (whether null or not) (no report), a
 
     catch(const Exception &e) //non error catch
     {
-        AnsiString TTErrorFileName = "Analysis Error.txt";
-        TTErrorFileName = CurDir + "\\Formatted timetables\\" + TTErrorFileName;
+        std::filesystem::path TTErrorFileName = "Analysis Error.txt";
+        TTErrorFileName = CurDir / std::filesystem::path{"Formatted timetables"} / TTErrorFileName;
         std::ofstream TTError(TTErrorFileName.c_str());
         if(TTError == 0)
         {

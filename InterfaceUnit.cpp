@@ -257,7 +257,7 @@ __fastcall TInterface::TInterface(TComponent* Owner) : TForm(Owner)
 
         ResetAll(0);
 
-        TempTTFileName = "";
+		TempTTFileName = "";
 
         PointFlash->LoadOverlayGraphic(3, RailGraphics->bmGreenRect);
         AutoRouteStartMarker->LoadOverlayGraphic(4, RailGraphics->bmLightBlueRect);
@@ -695,7 +695,7 @@ __fastcall TInterface::~TInterface()
     {
         // rewrite ConfigFile with signal handedness, background colour, InitialDir values (may be same but no matter) & default track element length & speed limit
         SaveConfigFile(1);   //added at v2.11.0
-        DeleteFile(TempTTFileName); // added at v2.5.0 to prevent temporary files building up
+        std::filesystem::remove(TempTTFileName); // added at v2.5.0 to prevent temporary files building up
         SkipFormResizeEvent = true; // added at v2.1.0
         delete NonSigRouteStartMarker;
         delete SigRouteStartMarker;
@@ -6013,7 +6013,7 @@ void __fastcall TInterface::ExitMenuItemClick(TObject *Sender)
         }
         if((TempTTFileName != "") && FileExists(TempTTFileName))
         {
-            DeleteFile(TempTTFileName);
+            std::filesystem::remove(TempTTFileName);
         }
         Utilities->CallLogPop(1181);
         Application->Terminate();
@@ -13740,7 +13740,7 @@ void __fastcall TInterface::FormClose(TObject *Sender, TCloseAction &Action)
         }
         if((TempTTFileName != "") && FileExists(TempTTFileName))
         {
-            DeleteFile(TempTTFileName);
+            std::filesystem::remove(TempTTFileName);
         }
         Utilities->CallLogPop(971);
     }
@@ -19961,7 +19961,7 @@ void TInterface::ErrorLog(int Caller, AnsiString Message)
     SaveErrorFile();
     if((TempTTFileName != "") && FileExists(TempTTFileName))
     {
-        DeleteFile(TempTTFileName);
+        std::filesystem::remove(TempTTFileName);
     }
     Display->GetImage()->Visible = false;
     PerfLogForm->Visible = false;
@@ -20366,7 +20366,7 @@ void TInterface::SaveSession(int Caller)
             if(!(SaveTimetableToSessionFile(0, SessionFile, SessionFileStr))) //includes the timetable itself + TrainOperatingData
             {
                 SessionFile.close();
-                DeleteFile(SessionFileStr);
+                std::filesystem::remove(SessionFileStr);
                 Screen->Cursor = TCursor(-2); // Arrow;
                 TrainController->StopTTClockMessage(3, "Error saving file, unable to save session");
                 Utilities->CallLogPop(1150);
@@ -21702,7 +21702,7 @@ bool TInterface::LoadTimetableFromSessionFile(int Caller, std::ifstream &Session
     TrainController->SigSLow = false;
     if((TempTTFileName != "") && FileExists(TempTTFileName))
     {
-        DeleteFile(TempTTFileName);
+        std::filesystem::remove(TempTTFileName);
     }
     int TempTTFileNumber = 0;
 
@@ -21727,7 +21727,7 @@ bool TInterface::LoadTimetableFromSessionFile(int Caller, std::ifstream &Session
         if(!SessionFile.getline(Buffer, 10000, '\0'))
         {
             TTBFile.close();
-            DeleteFile(TempTTFileName);
+            std::filesystem::remove(TempTTFileName);
             delete[]Buffer;
             Utilities->CallLogPop(1222);
             return(false);
@@ -21752,7 +21752,7 @@ bool TInterface::LoadTimetableFromSessionFile(int Caller, std::ifstream &Session
             if(!SessionFile.getline(Buffer, 10000, '\0'))
             {
                 TTBFile.close();
-                DeleteFile(TempTTFileName);
+                std::filesystem::remove(TempTTFileName);
                 delete[]Buffer;
                 Utilities->CallLogPop(1223);
                 return(false);
@@ -21785,21 +21785,21 @@ bool TInterface::LoadTimetableFromSessionFile(int Caller, std::ifstream &Session
                 if(!(BuildTrainDataVectorForLoadFile(1, TTBLFile, GiveMessagesFalse, CheckLocationsExistInRailwayTrue, SessionFileTrue)))
                 {
                     TTBLFile.close();
-                    DeleteFile(TempTTFileName);
+                    std::filesystem::remove(TempTTFileName);
                     Utilities->CallLogPop(1224);
                     return(false);
                 }
             }
             else
             {
-                DeleteFile(TempTTFileName);
+                std::filesystem::remove(TempTTFileName);
                 Utilities->CallLogPop(1225);
                 return(false);
             }
         } // if(FileIntegrityCheck(TTBFileName.c_str()))
         else
         {
-            DeleteFile(TempTTFileName);
+            std::filesystem::remove(TempTTFileName);
             Utilities->CallLogPop(1226);
             return(false);
         }
@@ -23232,11 +23232,11 @@ void TInterface::SaveTempTimetableFile(int Caller, AnsiString InFileName)
     Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",SaveTempTimetableFile");
     if((TempTTFileName != "") && FileExists(TempTTFileName))
     {
-        DeleteFile(TempTTFileName);
+        std::filesystem::remove(TempTTFileName);
     }
     int TempTTFileNumber = 0;
 
-    while(FileExists(CurDir + "\\TmpTT" + AnsiString(TempTTFileNumber) + ".tmp"))
+    while(FileExists(CurDir / std::filesystem::path{"TmpTT" + AnsiString(TempTTFileNumber) + ".tmp"}))
     {
         TempTTFileNumber++;
     }

@@ -2819,12 +2819,12 @@ void TTrack::LoadGraphics(int Caller, std::ifstream &VecFile, UnicodeString Grap
 // first int is number of graphics, then each graphic, create in UserGraphicMap, derive Width & height from TPicture
 // & load into UserGraphicItem then store in UserGraphicVector
     UserGraphicVector.clear();
-    TUserGraphicItem UGI;
+	TUserGraphicItem UGI;
     int NumberOfGraphics = Utilities->LoadFileInt(VecFile);
 
     for(int x = 0; x < NumberOfGraphics; x++)
     {
-        UGI.FileName = GraphicsPath + "\\" + Utilities->LoadFileString(VecFile);
+		UGI.FileName = GraphicsPath / Utilities->LoadFileString(VecFile);
         UGI.HPos = Utilities->LoadFileInt(VecFile);
         UGI.VPos = Utilities->LoadFileInt(VecFile);
         UGI.Width = 0; // provisional value
@@ -3232,7 +3232,7 @@ bool TTrack::CheckTrackElementsInFile(int Caller, int &NumberOfActiveElements, b
 
 // ---------------------------------------------------------------------------
 
-bool TTrack::CheckUserGraphics(int Caller, std::ifstream &VecFile, UnicodeString GraphicsPath)
+bool TTrack::CheckUserGraphics(int Caller, std::ifstream &VecFile, std::filesystem::path GraphicsPath)
 {
     Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",CheckUserGraphics");
     int NumberOfGraphics = Utilities->LoadFileInt(VecFile);
@@ -3243,7 +3243,7 @@ bool TTrack::CheckUserGraphics(int Caller, std::ifstream &VecFile, UnicodeString
         return(false);
     }
     // filename in Graphics folder, then HPos, then VPos
-    AnsiString FileName = "", TempStr = "";
+    std::filesystem::path FileName{""}, TempStr{""};
 
     for(int x = 0; x < NumberOfGraphics; x++)
     {
@@ -3256,7 +3256,7 @@ bool TTrack::CheckUserGraphics(int Caller, std::ifstream &VecFile, UnicodeString
                 delete TempPicture;
                 return(false);
             }
-            TempPicture->LoadFromFile(GraphicsPath + "\\" + FileName); // only loaded to check and catch errors
+            TempPicture->LoadFromFile(GraphicsPath / FileName); // only loaded to check and catch errors
             delete TempPicture;
             if(!Utilities->CheckFileInt(VecFile, -2000000, 2000000)) // HPos, allow plenty of scope
             {
@@ -3280,7 +3280,7 @@ bool TTrack::CheckUserGraphics(int Caller, std::ifstream &VecFile, UnicodeString
                 Utilities->CheckAndReadFileString(VecFile, TempStr); //next VPos
                 Utilities->CheckAndReadFileString(VecFile, TempStr); //next VPos
             }
-            ShowMessage(FileName +
+            ShowMessage(FileName.c_str() +
                         " has an incorrect file format, user graphics can't be loaded. Ensure that all user graphic files are valid with extension .bmp, .gif, .jpg, or .png");
             Utilities->CallLogPop(2172);
             delete TempPicture;
@@ -3297,7 +3297,7 @@ bool TTrack::CheckUserGraphics(int Caller, std::ifstream &VecFile, UnicodeString
                 Utilities->CheckAndReadFileString(VecFile, TempStr); //next VPos
                 Utilities->CheckAndReadFileString(VecFile, TempStr); //next VPos
             }
-            ShowMessage("Unable to load user graphic files, ensure that " + FileName +
+            ShowMessage("Unable to load user graphic files, ensure that " + FileName.c_str() +
                         " exists in the 'Graphics' folder and that it is has extension .bmp, .gif, .jpg, or .png.");
             Utilities->CallLogPop(2173);
             delete TempPicture;

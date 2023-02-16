@@ -26,11 +26,12 @@
 // ---------------------------------------------------------------------------
 #include <vcl.h>
 #include <memory> //for smart pointer
+#include <filesystem>
 
 class TUserGraphicItem
 {
 public:
-    AnsiString FileName; // this file is in the Graphics folder
+	std::filesystem::path FileName; // this file is in the Graphics folder
     int HPos, VPos;
     int Width, Height;
     TPicture *UserGraphic;

@@ -75,6 +75,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <fstream>
 #include <vector>
 #include <vcl.h>
+#include <filesystem>
 
 // ---------------------------------------------------------------------------
 
@@ -1202,7 +1203,7 @@ private:
 ///< set to RlyClpBrdCopy or RlyClpBrd_Cut when Windows Clipboard contains a valid railway segment
     AnsiString CopiedEntryStr;
 ///< a timetable entry that has been copied
-    AnsiString CreateEditTTFileName;
+    std::filesystem::path CreateEditTTFileName;
 ///< the full path and filename of the timetable file
     AnsiString CreateEditTTTitle;
 ///< the title of the timetable currently being edited - i.e. the filename without the '.ttb'
@@ -1214,17 +1215,17 @@ private:
 ///< temporary store for the information panel caption
     AnsiString OneEntryTimetableContents;
 ///< the current text in the large right hand timetable edit window
-    AnsiString PerformanceFileName;
+    std::filesystem::path PerformanceFileName;
 ///< full path and filename of the performance file
     AnsiString RailwayTitle, TimetableTitle;
 ///< the titles of the loaded railway and loaded timetable, i.e. the filenames without the extension
-    AnsiString SavedFileName;
+    std::filesystem::path SavedFileName;
 ///< the full path and filename of the loaded railway
-    AnsiString TempTTFileName;
+    std::filesystem::path TempTTFileName;
 ///< the name for the temporary file used to save loaded timetables for storage in session files & error logs
     AnsiString TTSelectedEntry;
 ///< used to record the current timetable entry when changing to AZ order or back to original order
-    AnsiString SelectedGraphicFileName;
+    std::filesystem::path SelectedGraphicFileName;
 ///< filename for selected graphic set during LoadGraphic
     bool AllSetUpFlag;
 ///< false during initial start up, true when all set up to allow MasterClock to start
@@ -1514,7 +1515,7 @@ to another point bidir leg with 3 PDs set.  If so it returns true, else false.*/
 /// Erase a location name (providing it exists in LocationNameMultiMap) from TextVector, return true if text found & exists in LocationNameMultiMap, and if so return text position in &HPos & &VPos
     bool EraseLocationNameText(int Caller, AnsiString Name, int &HPos, int &VPos);
 /// Check integrity of a railway file prior to loading, return true for success
-    bool FileIntegrityCheck(int Caller, char *FileName) const;
+    bool FileIntegrityCheck(int Caller, std::filesystem::path FileName) const;
 /// Called during gap setting to mark a gap with a red ellipse and ask user to select the corresponding gap, returns true if an unset gap found
     bool HighLightOneGap(int Caller, int &HLoc, int &VLoc);
 /// Loads timetable into memory from a session file, true if successful
@@ -1526,11 +1527,11 @@ to another point bidir leg with 3 PDs set.  If so it returns true, else false.*/
 /// Returns true if there are no track elements and no text
     bool NoRailway();
 /// Called when compiling the error log file, to save the loaded timetable if any and the timetable being edited if any
-    bool SaveTimetableToErrorFile(int Caller, std::ofstream &ErrorFile, AnsiString ErrorFileStr, AnsiString TimetableFileName);
+    bool SaveTimetableToErrorFile(int Caller, std::ofstream &ErrorFile, AnsiString ErrorFileStr, std::filesystem::path TimetableFileName);
 /// Called during a session save to save the current timetable in the session file, true if successful
     bool SaveTimetableToSessionFile(int Caller, std::ofstream &SessionFile, AnsiString SessionFileStr);
 /// Checks session file integrity prior to loading, true for success
-    bool SessionFileIntegrityCheck(int Caller, AnsiString FileName);
+    bool SessionFileIntegrityCheck(int Caller, std::filesystem::path FileName);
 /// Add 'Name' to TextVector and display on screen at a position determined by the shape and size of the location if UseEnteredPosition false, or at HPos & VPos if UseEnteredPosition true
     void AddLocationNameText(int Caller, AnsiString Name, int HPos, int VPos, bool UseEnteredPosition);
 /// Function that deals with approach locking during ClockTimer2 function
