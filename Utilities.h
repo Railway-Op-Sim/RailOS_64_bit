@@ -27,6 +27,9 @@
 
 #include <deque>
 #include <vcl.h>
+#include <string>
+#include <regex>
+#include <map>
 #include <fstream>
 #include <locale.h> //to check local decimal point character, added at v2.4.0
 
@@ -42,6 +45,12 @@ enum TFailureMode //added at v2.14.0.  Here so FailureMode retains value when Cl
     FNil, FMinor, FModerate, FMajor
 };
 
+// ---------------------------------------------------------------------------
+// Checks for older file system hierarchy and returns this instead if found
+// supports move to system friendly file names (no spaces, special chars etc.)
+std::filesystem::path LegacyDirectoryFinder(std::filesystem::path root_directory);
+
+// ---------------------------------------------------------------------------
 class TUtilities // single object incorporating general purpose data & functions for all units to access
 {
 public:

@@ -76,6 +76,10 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <vcl.h>
 #include <filesystem>
+#include <iomanip>
+#include <ctime>
+
+#include "Utilities.h"
 
 // ---------------------------------------------------------------------------
 
@@ -1008,13 +1012,14 @@ public: // AboutForm needs access to these
 private:
 
 // Folder names
-    static const UnicodeString RAILWAY_DIR_NAME;
-    static const UnicodeString TIMETABLE_DIR_NAME;
-    static const UnicodeString PERFLOG_DIR_NAME;
-    static const UnicodeString SESSION_DIR_NAME;
-    static const UnicodeString IMAGE_DIR_NAME;
-    static const UnicodeString FORMATTEDTT_DIR_NAME;
-    static const UnicodeString USERGRAPHICS_DIR_NAME;
+	static const std::filesystem::path RAILWAY_DIR_NAME;
+	static const std::filesystem::path TIMETABLE_DIR_NAME;
+	static const std::filesystem::path PERFLOG_DIR_NAME;
+	static const std::filesystem::path SESSION_DIR_NAME;
+	static const std::filesystem::path IMAGE_DIR_NAME;
+	static const std::filesystem::path FORMATTEDTT_DIR_NAME;
+	static const std::filesystem::path USERGRAPHICS_DIR_NAME;
+    static const std::filesystem::path METADATA_DIR_NAME;
 
 // Level 2 program modes (i.e. submodes from the level 1 modes)
     enum TLevel2OperMode
@@ -1207,7 +1212,7 @@ private:
 ///< the full path and filename of the timetable file
     AnsiString CreateEditTTTitle;
 ///< the title of the timetable currently being edited - i.e. the filename without the '.ttb'
-    AnsiString CurDir;
+    std::filesystem::path CurDir;
 ///< the full path to the folder where railway.exe resides
     AnsiString DirectoryError;
 ///< unused
@@ -1529,7 +1534,7 @@ to another point bidir leg with 3 PDs set.  If so it returns true, else false.*/
 /// Called when compiling the error log file, to save the loaded timetable if any and the timetable being edited if any
     bool SaveTimetableToErrorFile(int Caller, std::ofstream &ErrorFile, AnsiString ErrorFileStr, std::filesystem::path TimetableFileName);
 /// Called during a session save to save the current timetable in the session file, true if successful
-    bool SaveTimetableToSessionFile(int Caller, std::ofstream &SessionFile, AnsiString SessionFileStr);
+    bool SaveTimetableToSessionFile(int Caller, std::ofstream &SessionFile, std::filesystem::path SessionFileStr);
 /// Checks session file integrity prior to loading, true for success
     bool SessionFileIntegrityCheck(int Caller, std::filesystem::path FileName);
 /// Add 'Name' to TextVector and display on screen at a position determined by the shape and size of the location if UseEnteredPosition false, or at HPos & VPos if UseEnteredPosition true

@@ -16644,7 +16644,10 @@ void TTrainController::CreateFormattedTimetable(int Caller, AnsiString RailwayTi
 
     // format "16/06/2009 20:55:17"
     // avoid characters in filename:=   / \ : * ? " < > |
-    TTFileName = CurDir / std::filesystem::path{"Formatted_Timetables/Timetable_" + TTFileName + "_" + RailwayTitle + "_" + TimetableTitle + ".csv"};
+	TTFileName = CurDir / std::filesystem::path{
+	LegacyDirectoryFinder("Formatted_Timetables") / "Timetable_" +
+	TTFileName + "_" + RailwayTitle + "_" + TimetableTitle + ".csv"
+	};
 
 	const std::filesystem::path ShortTTName = TTFileName.filename();
 
@@ -17057,7 +17060,8 @@ void TTrainController::CreateFormattedTimetable(int Caller, AnsiString RailwayTi
 
     std::filesystem::path TTFileName2 = TDateTime::CurrentDateTime().FormatString("dd_mm_yyyy_hh_nn_ss");
 
-    TTFileName2 = CurDir / std::filesystem::path{"Formatted_Timetables/Timetable_" + TTFileName2 + "_" + RailwayTitle + "_" + TimetableTitle + ".txt"};
+	TTFileName2 = CurDir / LegacyDirectoryFinder("Formatted_Timetables");
+	TTFileName2 /= std::filesystem::path{"Timetable_" + TTFileName2 + "_" + RailwayTitle + "_" + TimetableTitle + ".txt"};
 
     std::ofstream TTFile2(TTFileName2.c_str()); //chronological timetable
 
@@ -17398,7 +17402,8 @@ Note:  Any shuttle start can have any finish - feeder and finish, neither, feede
         SequenceLog += "2\n";
 /*
 //  this sequence is to test the validity of AllServiceCallingLocsMap
-        AnsiString TestFile = CurDir + "\\Formatted timetables\\TestFile; " + RailwayTitle + "; " + TimetableTitle + ".txt";
+		std::filesystem::path TestFile = CurDir / LegacyDirectoryFinder("Formatted timetables");
+		TextFile /= std::filesystem::path{"TestFile_" + RailwayTitle + "_" + TimetableTitle + ".txt"};
         std::ofstream Test(TestFile.c_str());
 
         if(TestFile == 0)
@@ -17950,7 +17955,8 @@ j) all other finish entries (all link to another service) are ignored as will be
 
         //set up the output file
 		std::string TTFileName3 = TDateTime::CurrentDateTime().FormatString("dd_mm_yyyy_hh_nn_ss");
-		TTFileName3 = CurDir / std::filesystem::path{"Formatted_Timetables/Conflict Analysis"} / std::filesystem::path{TTFileName3 + "_" + RailwayTitle + "_" + TimetableTitle + ".csv"};
+		TTFileName3 = CurDir / LegacyDirectoryFinder("Formatted_Timetables");
+		TTFileName3 /= std::filesystem::path{"Conflict_Analysis"} / std::filesystem::path{TTFileName3 + "_" + RailwayTitle + "_" + TimetableTitle + ".csv"};
 
         std::ofstream TTFile3(TTFileName3.c_str());
 
@@ -19360,8 +19366,8 @@ different to the train's front element name (whether null or not) (no report), a
 
     catch(const Exception &e) //non error catch
     {
-        std::filesystem::path TTErrorFileName = "Analysis Error.txt";
-        TTErrorFileName = CurDir / std::filesystem::path{"Formatted timetables"} / TTErrorFileName;
+        std::filesystem::path TTErrorFileName{"Analysis Error.txt"};
+        TTErrorFileName = CurDir / LegacyDirectoryFinder("Formatted_Timetables") / TTErrorFileName;
         std::ofstream TTError(TTErrorFileName.c_str());
         if(TTError == 0)
         {

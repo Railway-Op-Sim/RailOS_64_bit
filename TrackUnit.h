@@ -652,9 +652,9 @@ can't have a route set while changing; can't be opened while a route is set; and
     typedef std::vector<TTrackElement>::iterator TTrackVectorIterator;
 ///< iterator for TTrackVector
 
-    typedef std::map<AnsiString, TPicture*>TUserGraphicMap;
+    typedef std::map<std::filesystem::path, TPicture*>TUserGraphicMap;
 ///< map of filenames as key and TPicture* as value. This holds all the TPicture pointers created when a user graphic is selected
-    typedef std::pair<AnsiString, TPicture*>TUserGraphicMapEntry;
+    typedef std::pair<std::filesystem::path, TPicture*>TUserGraphicMapEntry;
 ///<an entry for TUserGraphicMap
 
     typedef std::map<THVPair, unsigned int, TMapComp>TTrackMap;
@@ -1000,7 +1000,7 @@ can't have a route set while changing; can't be opened while a route is set; and
 /// True if TrackElements in the file are all valid
     bool CheckTrackElementsInFile(int Caller, int &NumberOfActiveElements, bool &GraphicsFollow, std::ifstream& VecFile);
 ///checks all user graphics & returns true for success
-    bool CheckUserGraphics(int Caller, std::ifstream &InFile, UnicodeString GraphicsPath);
+    bool CheckUserGraphics(int Caller, std::ifstream &InFile, std::filesystem::path GraphicsPath);
 /// As DiagonalFouledByRouteOrTrain (in TAllRoutes) but only checks for a train (may or may not be a route present (new at v1.2.0))
     bool DiagonalFouledByTrain(int Caller, int HLoc, int VLoc, int DiagonalLinkNumber, int &TrainID);
 /// True if the element defined by MapPos is present in LNDone2MultiMap, used during location naming
@@ -1182,7 +1182,7 @@ platforms (inc footcrossing tracks if (but only if) they have a platform at that
 /// Load all BarriersDownVector values from SessionFile
     void LoadBarriersDownVector(int Caller, std::ifstream &VecFile);
 /// new at v2.4.0, load user graphics
-    void LoadGraphics(int Caller, std::ifstream &VecFile, UnicodeString GraphicsPath);
+    void LoadGraphics(int Caller, std::ifstream &VecFile, std::filesystem::path GraphicsPath);
 /// Load track elements (active & inactive) from the file into the relevant vectors and maps, and try to link the resulting track
     void LoadTrack(int Caller, std::ifstream &VecFile, bool &GraphicsFollow);
 /// Mark on screen a track element according to its length and speed limit if either of these differ from their default values

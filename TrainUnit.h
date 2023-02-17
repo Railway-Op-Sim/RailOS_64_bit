@@ -29,6 +29,8 @@
 #include <vcl.h>
 #include <list>
 
+#include "Utilities.h"
+
 // ---------------------------------------------------------------------------
 
 /// Predeclared to allow access, full declaration in DisplayUnit
@@ -1008,7 +1010,7 @@ since OA panel only rebuilt every 2 secs when mouseup on panel the train could b
 /// calculates additional lateness values for trains that haven't reached their destinations yet
     void CalcOperatingAndNotStartedTrainLateness(int Caller);
 /// Examines the internal timetable (TrainDataVector) and creates from it a chronological (.txt) timetable and also a traditional spreadsheet format (.csv) timetable
-    void CreateFormattedTimetable(int Caller, AnsiString RailwayTitle, AnsiString TimetableTitle, AnsiString CurDir);
+    void CreateFormattedTimetable(int Caller, AnsiString RailwayTitle, AnsiString TimetableTitle, std::filesystem::path CurDir);
 /// called when exiting operation mode to delete all trains and timetable data etc
     void FinishedOperation(int Caller);
 /// load ContinuationAutoSigEntries from a session file

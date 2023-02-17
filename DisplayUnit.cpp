@@ -3,22 +3,18 @@
       BEWARE OF COMMENTS in .cpp files:  they were accurate when written but have
       sometimes been overtaken by changes and not updated
       Comments in .h files are believed to be accurate and up to date
-
       This is a source code file for "railway.exe", a railway operation
       simulator, written originally in Borland C++ Builder 4 Professional with
       later updates in Embarcadero C++Builder 10.2.
       Copyright (C) 2010 Albert Ball [original development]
-
       This program is free software: you can redistribute it and/or modify
       it under the terms of the GNU General Public License as published by
       the Free Software Foundation, either version 3 of the License, or
       (at your option) any later version.
-
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-
       You should have received a copy of the GNU General Public License
       along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -39,20 +35,15 @@
 #include <Vcl.Imaging.jpeg.hpp>         //for user graphics (.bmp already included in vcl)
 #include <Vcl.Imaging.pngimage.hpp>     //for user graphics
 #include <Vcl.Imaging.GIFImg.hpp>       //for user graphics
-
 #pragma hdrstop
-
 #include "DisplayUnit.h"
 #include "GraphicUnit.h"
 #include "Utilities.h"
-
 // ---------------------------------------------------------------------------
 #pragma package(smart_init)
-
 // ---------------------------------------------------------------------------
 TDisplay *Display;
 TDisplay *HiddenDisplay;
-
 int TDisplay::DisplayOffsetH = 0; // have to be initialised outside the class, these lines aren't called
 int TDisplay::DisplayOffsetV = 0; // in the normal way, the members are presumably intialised by the compiler
 int TDisplay::DisplayOffsetHHome = 0; // without being executed
@@ -61,7 +52,6 @@ int TDisplay::DisplayZoomOutOffsetH = 0;
 int TDisplay::DisplayZoomOutOffsetV = 0;
 int TDisplay::DisplayZoomOutOffsetHHome = 0;
 int TDisplay::DisplayZoomOutOffsetVHome = 0;
-
 // ---------------------------------------------------------------------------
 //removed TMemo* &MemoBox at v2.13.0 when created new performance log form
 TDisplay::TDisplay(TImage* &Image, TLabel* &L1, TLabel* &L2, TLabel* &L3, TLabel* &L4, TLabel* &L5, TLabel* &L6, TLabel* &L7, TLabel* &L8,
@@ -79,9 +69,7 @@ TDisplay::TDisplay(TImage* &Image, TLabel* &L1, TLabel* &L2, TLabel* &L3, TLabel
     Output->Canvas->Font->Charset = (TFontCharset)(0);
     ZoomOutFlag = false;
 }
-
 // ---------------------------------------------------------------------------
-
 void TDisplay::PlotOutput(int Caller, int HPos, int VPos, Graphics::TBitmap *PlotItem)
 {
     if(Display->ZoomOutFlag)
@@ -93,9 +81,7 @@ void TDisplay::PlotOutput(int Caller, int HPos, int VPos, Graphics::TBitmap *Plo
 // Update(); dropped as many operations too slow
     Utilities->CallLogPop(1461);
 }
-
 // ---------------------------------------------------------------------------
-
 void TDisplay::PlotAndAddUserGraphic(int Caller, TUserGraphicItem UserGraphicItem)
 {
     if(Display->ZoomOutFlag)
@@ -107,9 +93,7 @@ void TDisplay::PlotAndAddUserGraphic(int Caller, TUserGraphicItem UserGraphicIte
     Output->Canvas->Draw(UserGraphicItem.HPos - (DisplayOffsetH * 16), UserGraphicItem.VPos - (DisplayOffsetV * 16), UserGraphicItem.UserGraphic->Graphic);
     Utilities->CallLogPop(2179);
 }
-
 // ---------------------------------------------------------------------------
-
 void TDisplay::PlotSmallOutput(int Caller, int HPos, int VPos, Graphics::TBitmap *PlotItem)
 {
     Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",PlotSmallOutput," + AnsiString(HPos) + "," + AnsiString(VPos));
@@ -117,15 +101,12 @@ void TDisplay::PlotSmallOutput(int Caller, int HPos, int VPos, Graphics::TBitmap
 // Update();  too slow with this
     Utilities->CallLogPop(1462);
 }
-
 // ---------------------------------------------------------------------------
-
 void TDisplay::Ellipse(int Caller, int HPos, int VPos, TColor Col)
 {
     Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",Ellipse," + AnsiString(HPos) + "," + AnsiString(VPos) + "," +
                                  AnsiString(Col));
     TBrush *TempBrush = Output->Canvas->Brush;
-
     Output->Canvas->Brush->Style = bsClear;
     Output->Canvas->Pen->Style = psSolid;
     Output->Canvas->Pen->Width = 2;
@@ -136,9 +117,7 @@ void TDisplay::Ellipse(int Caller, int HPos, int VPos, TColor Col)
     Update();
     Utilities->CallLogPop(1463);
 }
-
 // ---------------------------------------------------------------------------
-
 void TDisplay::InvertElement(int Caller, int HPos, int VPos)
 {
     Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",InvertElement," + AnsiString(HPos) + "," + AnsiString(VPos));
@@ -148,15 +127,12 @@ void TDisplay::InvertElement(int Caller, int HPos, int VPos)
     Update();
     Utilities->CallLogPop(1464);
 }
-
 // ---------------------------------------------------------------------------
-
 void TDisplay::Rectangle(int Caller, int HPos, int VPos, TColor Col, int Size, int Width) // Size 0,2,4,6 for large to small
 {
     Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",Rectangle," + AnsiString(HPos) + "," + AnsiString(VPos) + "," +
                                  AnsiString(Col) + "," + AnsiString(Size));
     TBrush *TempBrush = Output->Canvas->Brush;
-
     Output->Canvas->Brush->Style = bsClear;
     Output->Canvas->Pen->Style = psSolid;
     Output->Canvas->Pen->Width = Width;
@@ -167,9 +143,7 @@ void TDisplay::Rectangle(int Caller, int HPos, int VPos, TColor Col, int Size, i
     Update();
     Utilities->CallLogPop(1465);
 }
-
 // ---------------------------------------------------------------------------
-
 void TDisplay::Clear(int Caller, TRect Rect)
 {
     Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",Clear," + AnsiString(Rect.left) + "," + AnsiString(Rect.top));
@@ -177,9 +151,7 @@ void TDisplay::Clear(int Caller, TRect Rect)
     Output->Canvas->FillRect(Rect);
     Utilities->CallLogPop(1466);
 }
-
 // ---------------------------------------------------------------------------
-
 void TDisplay::ClearDisplay(int Caller)
 {
     Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",ClearDisplay");
@@ -187,9 +159,7 @@ void TDisplay::ClearDisplay(int Caller)
     Output->Canvas->FillRect(Output->ClientRect);
     Utilities->CallLogPop(1467);
 }
-
 // ---------------------------------------------------------------------------
-
 void TDisplay::TextOut(int Caller, int HPos, int VPos, AnsiString TextString, TFont *Font)
 {
     Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",TextOut," + AnsiString(HPos) + "," + AnsiString(VPos) + "," +
@@ -200,7 +170,6 @@ void TDisplay::TextOut(int Caller, int HPos, int VPos, AnsiString TextString, TF
     }
     TFont *TempInputFont = new TFont; // don't alter the original font or won't print black on images
     TFont *TempCanvasFont = new TFont; // store Output->Canvas font to put back later
-
     TempCanvasFont->Assign(Output->Canvas->Font);
     TempInputFont->Assign(Font);
     if(Utilities->clTransparent != clB5G5R5) // dark background
@@ -211,7 +180,6 @@ void TDisplay::TextOut(int Caller, int HPos, int VPos, AnsiString TextString, TF
         }
     }
     TBrush *TempBrush = Output->Canvas->Brush;
-
     Output->Canvas->Brush->Style = bsClear; // so text prints transparent
     Output->Canvas->Font->Assign(TempInputFont);
     Output->Canvas->TextOut(HPos - (DisplayOffsetH * 16), VPos - (DisplayOffsetV * 16), TextString);
@@ -221,9 +189,7 @@ void TDisplay::TextOut(int Caller, int HPos, int VPos, AnsiString TextString, TF
     delete TempCanvasFont;
     Utilities->CallLogPop(1469);
 }
-
 // ---------------------------------------------------------------------------
-
 void TDisplay::GetRectangle(int Caller, TRect DestRect, TRect SourceRect, Graphics::TBitmap* &OriginalGraphic)
 {
     Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",GetRectangle," + AnsiString(DestRect.left) + "," +
@@ -231,9 +197,7 @@ void TDisplay::GetRectangle(int Caller, TRect DestRect, TRect SourceRect, Graphi
     OriginalGraphic->Canvas->CopyRect(DestRect, Display->Output->Canvas, SourceRect);
     Utilities->CallLogPop(1470);
 }
-
 // ---------------------------------------------------------------------------
-
 void TDisplay::PlotBlank(int Caller, int HLoc, int VLoc)
 {
     Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",PlotBlank," + AnsiString(HLoc) + "," + AnsiString(VLoc));
@@ -241,9 +205,7 @@ void TDisplay::PlotBlank(int Caller, int HLoc, int VLoc)
 // Update();
     Utilities->CallLogPop(1471);
 }
-
 // ---------------------------------------------------------------------------
-
 void TDisplay::PlotPointBlank(int Caller, int HLoc, int VLoc)
 {
     if(Display->ZoomOutFlag)
@@ -255,9 +217,7 @@ void TDisplay::PlotPointBlank(int Caller, int HLoc, int VLoc)
 // Update();
     Utilities->CallLogPop(1473);
 }
-
 // ---------------------------------------------------------------------------
-
 int TDisplay::RHSOffset(int initial_position)
 {
       switch(initial_position) {
@@ -281,9 +241,7 @@ int TDisplay::RHSOffset(int initial_position)
 				return initial_position;
 		}
 }
-
 // ---------------------------------------------------------------------------
-
 void TDisplay::PlotSignalBlank(int Caller, int HLoc, int VLoc, int SpeedTag, bool RHSFlag)
 {
 /*
@@ -299,7 +257,6 @@ void TDisplay::PlotSignalBlank(int Caller, int HLoc, int VLoc, int SpeedTag, boo
       SE    11x11  hoff = 5, voff = 5    74                                  0       0
       NE    11x11  hoff = 5, voff = 0    75                                  0       5
 */
-
     if(Display->ZoomOutFlag)
     {
         return;
@@ -326,7 +283,6 @@ void TDisplay::PlotSignalBlank(int Caller, int HLoc, int VLoc, int SpeedTag, boo
       75              5       0    Diag     NW->SE                                      0       5
 */
     int HOffset = 0;
-
     if(SpeedTag > 73)
     {
         HOffset = 5;
@@ -336,7 +292,6 @@ void TDisplay::PlotSignalBlank(int Caller, int HLoc, int VLoc, int SpeedTag, boo
         HOffset = 9;
     }
     int VOffset = 0;
-
     if(SpeedTag == 69)
     {
         VOffset = 9;
@@ -350,7 +305,6 @@ void TDisplay::PlotSignalBlank(int Caller, int HLoc, int VLoc, int SpeedTag, boo
         VOffset = 5;
     }
     Graphics::TBitmap *GraphicPtr;
-
     if(SpeedTag > 71)
     {
         GraphicPtr = RailGraphics->bmDiagonalSignalBlank;
@@ -367,9 +321,7 @@ void TDisplay::PlotSignalBlank(int Caller, int HLoc, int VLoc, int SpeedTag, boo
 // Update();
     Utilities->CallLogPop(1475);
 }
-
 // ---------------------------------------------------------------------------
-
 void TDisplay::PlotSignalBlankOnBitmap(int HLoc, int VLoc, int SpeedTag, Graphics::TBitmap *Bitmap, bool RHSFlag)
 {
 /*
@@ -384,7 +336,6 @@ void TDisplay::PlotSignalBlankOnBitmap(int HLoc, int VLoc, int SpeedTag, Graphic
       SE    11x11  hoff = 5, voff = 5    74                                  0       0
       NE    11x11  hoff = 5, voff = 0    75                                  0       5
 */
-
     Utilities->CallLog.push_back(Utilities->TimeStamp() + ",PlotSignalBlankOnBitmap," + AnsiString(HLoc) + "," + AnsiString(VLoc) + "," + AnsiString(SpeedTag));
     if((SpeedTag > 75) || (SpeedTag < 68))
     {
@@ -406,7 +357,6 @@ void TDisplay::PlotSignalBlankOnBitmap(int HLoc, int VLoc, int SpeedTag, Graphic
       75              5       0    Diag     NW->SE                                      0       5
 */
     int HOffset = 0;
-
     if(SpeedTag > 73)
     {
         HOffset = 5;
@@ -416,7 +366,6 @@ void TDisplay::PlotSignalBlankOnBitmap(int HLoc, int VLoc, int SpeedTag, Graphic
         HOffset = 9;
     }
     int VOffset = 0;
-
     if(SpeedTag == 69)
     {
         VOffset = 9;
@@ -430,7 +379,6 @@ void TDisplay::PlotSignalBlankOnBitmap(int HLoc, int VLoc, int SpeedTag, Graphic
         VOffset = 5;
     }
     Graphics::TBitmap *GraphicPtr;
-
     if(SpeedTag > 71)
     {
         GraphicPtr = RailGraphics->bmDiagonalSignalBlank;
@@ -447,9 +395,7 @@ void TDisplay::PlotSignalBlankOnBitmap(int HLoc, int VLoc, int SpeedTag, Graphic
 // Update();
     Utilities->CallLogPop(1870);
 }
-
 // ---------------------------------------------------------------------------
-
 void TDisplay::PlotAbsolute(int Caller, int HPos, int VPos, Graphics::TBitmap *PlotItem)
 {
     Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",PlotAbsolute," + AnsiString(HPos) + "," + AnsiString(VPos));
@@ -457,9 +403,7 @@ void TDisplay::PlotAbsolute(int Caller, int HPos, int VPos, Graphics::TBitmap *P
 // Update();
     Utilities->CallLogPop(1477);
 }
-
 // ---------------------------------------------------------------------------
-
 void TDisplay::PlotDashedRect(int Caller, TRect Rect)
 {
     Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",PlotDashedRect," + AnsiString(Rect.left) + "," + AnsiString(Rect.top));
@@ -479,9 +423,7 @@ void TDisplay::PlotDashedRect(int Caller, TRect Rect)
 // Update();
     Utilities->CallLogPop(1478);
 }
-
 // ---------------------------------------------------------------------------
-
 // relocated PerformanceLog function to PerfLogForm at v2.13.0 when created new performance log form
 void TDisplay::WarningLog(int Caller, AnsiString Statement)
 {
@@ -498,9 +440,7 @@ void TDisplay::WarningLog(int Caller, AnsiString Statement)
     OutputLog5->Caption = Statement;
     Utilities->CallLogPop(1785);
 }
-
 // ---------------------------------------------------------------------------
-
 void TDisplay::HideWarningLog(int Caller)
 {
     Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",HideWarningLog");
@@ -516,9 +456,7 @@ void TDisplay::HideWarningLog(int Caller)
     OutputLog5->Visible = false;
     Utilities->CallLogPop(1873);
 }
-
 // ---------------------------------------------------------------------------
-
 void TDisplay::ShowWarningLog(int Caller)
 {
     Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",ShowWarningLog");
@@ -534,6 +472,4 @@ void TDisplay::ShowWarningLog(int Caller)
     OutputLog5->Visible = true;
     Utilities->CallLogPop(1874);
 }
-
 // ---------------------------------------------------------------------------
-

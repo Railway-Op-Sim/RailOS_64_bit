@@ -32,7 +32,8 @@ class API
      private:
 		std::filesystem::path file_path_;
         std::map<AnsiString, AnsiString*> metadata_str_;
-        std::map<AnsiString, bool*> metadata_bool_;
+		std::map<AnsiString, bool*> metadata_bool_;
+        std::map<AnsiString, std::filesystem::path*> metadata_path_;
         std::map<AnsiString, int*> metadata_int_;
      public:
         /*! ******************************************************************
@@ -51,7 +52,18 @@ class API
         * @param label key to save recorded information under
         * @param data pointer to string variable to track
         *********************************************************************/
-        void add_metadata_str(const AnsiString& label, AnsiString* data);
+		void add_metadata_str(const AnsiString& label, AnsiString* data);
+
+        /*! ******************************************************************
+		* @brief add pointer to systempath variable to monitor value
+        *
+		* Adds the specified file path variable to be tracked, storing a pointer
+        * to access the value within a mapping.
+        *
+        * @param label key to save recorded information under
+        * @param data pointer to file path variable to track
+        *********************************************************************/
+		void add_metadata_path(const AnsiString& label, std::filesystem::path* data);
 
         /*! ******************************************************************
         * @brief add pointer to boolean variable to monitor value

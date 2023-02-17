@@ -2812,10 +2812,10 @@ void TTrack::LoadTrack(int Caller, std::ifstream& VecFile, bool &GraphicsFollow)
 
 // ---------------------------------------------------------------------------
 
-void TTrack::LoadGraphics(int Caller, std::ifstream &VecFile, UnicodeString GraphicsPath)
+void TTrack::LoadGraphics(int Caller, std::ifstream &VecFile, std::filesystem::path GraphicsPath)
 {
 // VecFile already open and its pointer at right place on calling
-    Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",LoadGraphics, " + GraphicsPath);
+    Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",LoadGraphics, " + GraphicsPath.c_str());
 // first int is number of graphics, then each graphic, create in UserGraphicMap, derive Width & height from TPicture
 // & load into UserGraphicItem then store in UserGraphicVector
     UserGraphicVector.clear();
@@ -2824,7 +2824,7 @@ void TTrack::LoadGraphics(int Caller, std::ifstream &VecFile, UnicodeString Grap
 
     for(int x = 0; x < NumberOfGraphics; x++)
     {
-		UGI.FileName = GraphicsPath / Utilities->LoadFileString(VecFile);
+		UGI.FileName = GraphicsPath / std::filesystem::path{Utilities->LoadFileString(VecFile).c_str()};
         UGI.HPos = Utilities->LoadFileInt(VecFile);
         UGI.VPos = Utilities->LoadFileInt(VecFile);
         UGI.Width = 0; // provisional value
@@ -2849,10 +2849,10 @@ void TTrack::LoadGraphics(int Caller, std::ifstream &VecFile, UnicodeString Grap
 // TUserGraphicMapEntry UGME;   //can't define it here, it has to be defined before it is used - now defined in TrackUnit.h
                 UGME.first = UGI.FileName;
                 UGME.second = new TPicture;
-                UGME.second->LoadFromFile(UGME.first); // errors caught below
+                UGME.second->LoadFromFile(UGME.first.c_str()); // errors caught below
                 if(!Track->UserGraphicMap.insert(UGME).second) // if no failure then the new entry is inserted
                 {
-                    throw Exception("Map Insertion Error 2 - UserGraphicMap insertion failure for " + UGI.FileName);
+                    throw Exception(std::string{"Map Insertion Error 2 - UserGraphicMap insertion failure for " + UGI.FileName.generic_string()}.c_str());
                 }
                 UGI.UserGraphic = UGME.second;
                 UGI.Width = UGI.UserGraphic->Width;
@@ -2910,10 +2910,10 @@ void TTrack::LoadGraphics(int Caller, std::ifstream &VecFile, UnicodeString Grap
                     TUserGraphicMapEntry UGME;
                     UGME.first = UGI.FileName;
                     UGME.second = new TPicture;
-                    UGME.second->LoadFromFile(UGME.first); // errors caught below
+                    UGME.second->LoadFromFile(UGME.first.c_str()); // errors caught below
                     if(!Track->UserGraphicMap.insert(UGME).second) // if no failure then the new entry is inserted
                     {
-                        throw Exception("Map Insertion Error 3 - UserGraphicMap insertion failure for " + UGI.FileName);
+                        throw Exception(std::string{"Map Insertion Error 3 - UserGraphicMap insertion failure for " + UGI.FileName.generic_string()}.c_str());
                     }
                     UGI.UserGraphic = UGME.second;
                     UGI.Width = UGI.UserGraphic->Width;
@@ -3250,13 +3250,13 @@ bool TTrack::CheckUserGraphics(int Caller, std::ifstream &VecFile, std::filesyst
         TPicture *TempPicture = new TPicture;
         try
         {
-            if(!Utilities->CheckAndReadFileString(VecFile, FileName))
+            if(!Utilities->CheckAndReadFileString(VecFile, FileName.c_str()))
             {
                 Utilities->CallLogPop(2169);
                 delete TempPicture;
                 return(false);
             }
-            TempPicture->LoadFromFile(GraphicsPath / FileName); // only loaded to check and catch errors
+            TempPicture->LoadFromFile({GraphicsPath / FileName}.c_str()); // only loaded to check and catch errors
             delete TempPicture;
             if(!Utilities->CheckFileInt(VecFile, -2000000, 2000000)) // HPos, allow plenty of scope
             {
@@ -3272,16 +3272,16 @@ bool TTrack::CheckUserGraphics(int Caller, std::ifstream &VecFile, std::filesyst
         catch(const EInvalidGraphic &e)  //non error catch
         {
             //move file pointer to end of graphic section for later checks in session files
-            Utilities->CheckAndReadFileString(VecFile, TempStr); //get rid of HPos
-            Utilities->CheckAndReadFileString(VecFile, TempStr); //VPos
+			Utilities->CheckAndReadFileString(VecFile, TempStr.c_str()); //get rid of HPos
+            Utilities->CheckAndReadFileString(VecFile, TempStr.c_str()); //VPos
             for(int y = x + 1; y < NumberOfGraphics; y++)
             {
-                Utilities->CheckAndReadFileString(VecFile, TempStr); //next FileName
-                Utilities->CheckAndReadFileString(VecFile, TempStr); //next VPos
-                Utilities->CheckAndReadFileString(VecFile, TempStr); //next VPos
+				Utilities->CheckAndReadFileString(VecFile, TempStr.c_str()); //next FileName
+				Utilities->CheckAndReadFileString(VecFile, TempStr.c_str()); //next VPos
+                Utilities->CheckAndReadFileString(VecFile, TempStr.c_str()); //next VPos
             }
-            ShowMessage(FileName.c_str() +
-                        " has an incorrect file format, user graphics can't be loaded. Ensure that all user graphic files are valid with extension .bmp, .gif, .jpg, or .png");
+			ShowMessage(std::string{FileName.generic_string() +
+                        " has an incorrect file format, user graphics can't be loaded. Ensure that all user graphic files are valid with extension .bmp, .gif, .jpg, or .png"}.c_str());
             Utilities->CallLogPop(2172);
             delete TempPicture;
             return(true);      //for these file errors allow railway or session to be loaded, changed at v2.6.0
@@ -3289,15 +3289,15 @@ bool TTrack::CheckUserGraphics(int Caller, std::ifstream &VecFile, std::filesyst
         catch(const Exception &e) //non error catch
         {
             //move file pointer to end of graphic section for later checks in session files
-            Utilities->CheckAndReadFileString(VecFile, TempStr); //get rid of HPos
-            Utilities->CheckAndReadFileString(VecFile, TempStr); //VPos
+			Utilities->CheckAndReadFileString(VecFile, TempStr.c_str()); //get rid of HPos
+            Utilities->CheckAndReadFileString(VecFile, TempStr.c_str()); //VPos
             for(int y = x + 1; y < NumberOfGraphics; y++)
             {
-                Utilities->CheckAndReadFileString(VecFile, TempStr); //next FileName
-                Utilities->CheckAndReadFileString(VecFile, TempStr); //next VPos
-                Utilities->CheckAndReadFileString(VecFile, TempStr); //next VPos
+				Utilities->CheckAndReadFileString(VecFile, TempStr.c_str()); //next FileName
+				Utilities->CheckAndReadFileString(VecFile, TempStr.c_str()); //next VPos
+				Utilities->CheckAndReadFileString(VecFile, TempStr.c_str()); //next VPos
             }
-            ShowMessage("Unable to load user graphic files, ensure that " + FileName.c_str() +
+			ShowMessage("Unable to load user graphic files, ensure that " + FileName.c_str() +
                         " exists in the 'Graphics' folder and that it is has extension .bmp, .gif, .jpg, or .png.");
             Utilities->CallLogPop(2173);
             delete TempPicture;
@@ -11129,24 +11129,14 @@ void TTrack::SaveUserGraphics(int Caller, std::ofstream &VecFile)
 {
     Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",SaveUserGraphics");
     Utilities->SaveFileInt(VecFile, UserGraphicVector.size()); // number of items
-    TUserGraphicItem UGI;
-    AnsiString JustFileName = "";
+	std::filesystem::path JustFileName = "";
 
-    for(unsigned int x = 0; x < UserGraphicVector.size(); x++)
-    {
-        UGI = UserGraphicVectorAt(17, x);
-        int LastDelim = UGI.FileName.LastDelimiter('\\');
-        if(LastDelim == 0) // can't find it so skip this item
-        {
-            continue;
-        }
-        else
-        {
-            JustFileName = UGI.FileName.SubString(LastDelim + 1, UGI.FileName.Length() - LastDelim);
-        }
-        Utilities->SaveFileString(VecFile, JustFileName);
-        Utilities->SaveFileInt(VecFile, UGI.HPos);
-        Utilities->SaveFileInt(VecFile, UGI.VPos);
+	for(auto user_graphic : UserGraphicVector)
+	{
+        JustFileName = user_graphic.FileName.stem();
+		Utilities->SaveFileString(VecFile, JustFileName,c_str());
+		Utilities->SaveFileInt(VecFile, user_graphic.HPos);
+        Utilities->SaveFileInt(VecFile, user_graphic.VPos);
     }
     Utilities->CallLogPop(2178);
 }

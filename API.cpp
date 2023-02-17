@@ -15,13 +15,18 @@ API::API(const std::filesystem::path& file_name) {
    file_path_ = file_name;
 
    // Print something if program is opened
-   TIniFile* ini_file_ = new TIniFile(file_path_);
+   TIniFile* ini_file_ = new TIniFile(file_path_.c_str());
    ini_file_->WriteBool("session", "running", true);
 }
 
 void API::add_metadata_str(const AnsiString& label, AnsiString* data)
 {
     metadata_str_[label] = data;
+}
+
+void API::add_metadata_path(const AnsiString& label, std::filesystem::path* data)
+{
+    metadata_path_[label] = data;
 }
 
 void API::add_metadata_bool(const AnsiString& label, bool* data)
@@ -38,9 +43,9 @@ void API::dump()
 {
     try
     {
-        if(file_path_.IsEmpty()) return;  // Do not interrupt ROS if no file specified
+        if(file_path_.empty()) return;  // Do not interrupt ROS if no file specified
 
-        TIniFile* ini_file_ = new TIniFile(file_path_);
+        TIniFile* ini_file_ = new TIniFile(file_path_.c_str());
 
         if(!ini_file_) return;  // Do not interrupt ROS if failure
 
@@ -72,7 +77,17 @@ void API::dump()
             ini_file_->WriteInteger("session", it_int->first, data_);
 
             it_int++;
-        }
+		}
+
+        std::map<AnsiString, std::filesystem::path*>::iterator it_path = metadata_path_.begin();
+
+		while(it_path != metadata_path_.end())
+        {
+			const std::filesystem::path data_ = (it_path->second) ? *(it_path->second) : "";
+			ini_file_->WriteString("session", it_path->first, data_.c_str());
+
+            it_path++;
+		}
 
 
         if(ini_file_) delete ini_file_;
@@ -87,7 +102,7 @@ void API::dump()
 
 API::~API()
 {
-    TIniFile* ini_file_ = new TIniFile(file_path_);
+    TIniFile* ini_file_ = new TIniFile(file_path_.c_str());
 
     if(!ini_file_) return;  // Do not interrupt ROS if failure
 

@@ -849,4 +849,18 @@ AnsiString TUtilities::IncrementAnsiTimeOneMinute(AnsiString TimeVal)
 }
 
 // ---------------------------------------------------------------------------
+ std::filesystem::path LegacyDirectoryFinder(std::filesystem::path directory)
+ {
+	std::map<std::string, std::string> mapping_{{
+		{"Program_Timetables", "Program timetables"},
+		{"Formatted_Timetables", "Formatted timetables"},
+        {"Performance_Logs", "Performance logs"}
+	}};
 
+	const std::filesystem::path legacy_dir_{mapping_.at(directory.filename().generic_string())};
+	const std::filesystem::path legacy_path_{directory.parent_path() / legacy_dir_};
+
+	return (std::filesystem::exists(legacy_path_)) ? legacy_path_ : directory;
+ }
+
+// ---------------------------------------------------------------------------

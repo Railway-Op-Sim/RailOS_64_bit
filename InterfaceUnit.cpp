@@ -73,13 +73,14 @@ API *session_api_;  //moved from header to avoid AboutForm having access and def
                     //as well as Interface and giving a warning, added at v2.10.0
 
 // Folder Names
-const UnicodeString TInterface::RAILWAY_DIR_NAME = "Railways";
-const UnicodeString TInterface::TIMETABLE_DIR_NAME = "Program timetables";
-const UnicodeString TInterface::PERFLOG_DIR_NAME = "Performance logs";
-const UnicodeString TInterface::SESSION_DIR_NAME = "Sessions";
-const UnicodeString TInterface::IMAGE_DIR_NAME = "Images";
-const UnicodeString TInterface::FORMATTEDTT_DIR_NAME = "Formatted timetables";
-const UnicodeString TInterface::USERGRAPHICS_DIR_NAME = "Graphics";
+const std::filesystem::path TInterface::RAILWAY_DIR_NAME = "Railways";
+const std::filesystem::path TInterface::TIMETABLE_DIR_NAME = LegacyDirectoryFinder("Program_Timetables");
+const std::filesystem::path TInterface::PERFLOG_DIR_NAME = LegacyDirectoryFinder("Performance_Logs");
+const std::filesystem::path TInterface::SESSION_DIR_NAME = "Sessions";
+const std::filesystem::path TInterface::IMAGE_DIR_NAME = "Images";
+const std::filesystem::path TInterface::FORMATTEDTT_DIR_NAME = LegacyDirectoryFinder("Formatted_Timetables");
+const std::filesystem::path TInterface::USERGRAPHICS_DIR_NAME = "Graphics";
+const std::filesystem::path TInterface::METADATA_DIR_NAME = "Metadata";
 
 // ---------------------------------------------------------------------------
 
@@ -101,18 +102,21 @@ __fastcall TInterface::TInterface(TComponent* Owner) : TForm(Owner)
         // check for presence of directories, creation failure probably indicates that the
         // working folder is read-only
 
-        CurDir = AnsiString(GetCurrentDir());
+        CurDir = std::filesystem::current_path();
 //        ShowMessage("Curdir from GetCurrentDir() " + CurDir);    //these used to check behaviour outside the compiler
-        UnicodeString FullProgramName = GetModuleName(0);              // added at v2.9.0 to check executable exists
+        const std::filesystem::path FullProgramName{GetModuleName(0).c_str()};              // added at v2.9.0 to check executable exists
 //        ShowMessage("FullProgramName " + FullProgramName);
-        UnicodeString ProgramName = ExtractFileName(FullProgramName);  // as above
+        const std::filesystem::path ProgramName = FullProgramName.filename();  // as above
 //        ShowMessage("ProgramName " + ProgramName);
-        UnicodeString ProgramDirectoryName = ExtractFilePath(FullProgramName);  // as above
+		const std::filesystem::path ProgramDirectoryName = FullProgramName.parent_path();  // as above
 //        ShowMessage("ProgramDirectoryName " + ProgramDirectoryName);
 
-        if(!FileExists(ProgramName))  //added at v2.9.0 after discovering the effect described in the message
-        {
-            if(!SetCurrentDir(ProgramDirectoryName)) //if false the current directory couldn't be changed
+        if(!std::filesystem::exists(ProgramName))  //added at v2.9.0 after discovering the effect described in the message
+		{
+			try {
+                std::filesystem::current_path(ProgramDirectoryName);
+			}
+			catch(std::filesystem::filesystem_error&) //the current directory couldn't be changed
             {
                 ShowMessage("The working directory does not contain the railway executable file so the program cannot "
                             "open. This is usually because the program has been selected via the right-click taskbar icon though it may "
@@ -123,69 +127,43 @@ __fastcall TInterface::TInterface(TComponent* Owner) : TForm(Owner)
                             "if there is one, or the program icon shown in Windows Explorer.");
                 Application->Terminate();
             }
-            else
-            {
-                CurDir = AnsiString(GetCurrentDir());
-            }
-        }
+			CurDir = std::filesystem::current_path();
+		}
 
-        if(!DirectoryExists(RAILWAY_DIR_NAME))
-        {
-            if(!CreateDir(RAILWAY_DIR_NAME))
-            {
-                DirOpenError = true;
-            }
+		const std::vector<std::filesystem::path> directories_{
+			RAILWAY_DIR_NAME,
+			TIMETABLE_DIR_NAME,
+			PERFLOG_DIR_NAME,
+			METADATA_DIR_NAME,
+			SESSION_DIR_NAME,
+			IMAGE_DIR_NAME,
+			FORMATTEDTT_DIR_NAME,
+            USERGRAPHICS_DIR_NAME
+		};
 
-        }
-        if(!DirectoryExists(TIMETABLE_DIR_NAME))
-        {
-            if(!CreateDir(TIMETABLE_DIR_NAME))
-            {
-                DirOpenError = true;
+		for(auto directory : directories_)
+		{
+			if(!std::filesystem::exists(directory))
+			{
+				std::filesystem::create_directory(directory);
             }
-        }
-        if(!DirectoryExists(PERFLOG_DIR_NAME))
-        {
-            if(!CreateDir(PERFLOG_DIR_NAME))
-            {
-                DirOpenError = true;
-            }
-        }
-        if(!DirectoryExists(SESSION_DIR_NAME))
-        {
-            if(!CreateDir(SESSION_DIR_NAME))
-            {
-                DirOpenError = true;
-            }
-        }
-        if(!DirectoryExists(IMAGE_DIR_NAME))
-        {
-            if(!CreateDir(IMAGE_DIR_NAME))
-            {
-                DirOpenError = true;
-            }
-        }
-        if(!DirectoryExists(FORMATTEDTT_DIR_NAME))
-        {
-            if(!CreateDir(FORMATTEDTT_DIR_NAME))
-            {
-                DirOpenError = true;
-            }
-        }
-        if(!DirectoryExists(USERGRAPHICS_DIR_NAME))
-        {
-            if(!CreateDir(USERGRAPHICS_DIR_NAME))
-            {
-                DirOpenError = true;
-            }
-        }
+		}
+
         if(DirOpenError)
         {
-            ShowMessage("Failed to create one or more of folders: " + RAILWAY_DIR_NAME + ", " + TIMETABLE_DIR_NAME + ", " + PERFLOG_DIR_NAME + ", " +
-                        SESSION_DIR_NAME + ", " + IMAGE_DIR_NAME + ", " + FORMATTEDTT_DIR_NAME + ", " + USERGRAPHICS_DIR_NAME + ", " +
-                        "program operation will be restricted");
+			ShowMessage(
+				("Failed to create one or more of folders: " +
+				RAILWAY_DIR_NAME.generic_string() + ", " +
+				TIMETABLE_DIR_NAME.generic_string() + ", " +
+				PERFLOG_DIR_NAME.generic_string() + ", " +
+				SESSION_DIR_NAME.generic_string() + ", " +
+				IMAGE_DIR_NAME.generic_string() + ", " +
+				FORMATTEDTT_DIR_NAME.generic_string() + ", " +
+				USERGRAPHICS_DIR_NAME.generic_string() + ", " +
+				"program operation will be restricted"
+			).c_str());
         }
-        Application->HelpFile = AnsiString(CurDir + "\\Help.chm"); // added at v2.0.0 for .chm help file
+        Application->HelpFile = (CurDir / std::filesystem::path{"Help.chm"}).c_str(); // added at v2.0.0 for .chm help file
 
         MainMenu1->AutoHotkeys = maManual; // Embarcadero mod: to suppress '&' inclusion for underlined characters in menu items
         PopupMenu->AutoHotkeys = maManual; // as above
@@ -246,10 +224,10 @@ __fastcall TInterface::TInterface(TComponent* Owner) : TForm(Owner)
         /* ======================= ROS Dummy API ===============================
                     Connect API to track variables of interest, added at v2.10.0
         */
-        session_api_ = new API(CurDir + "\\session.ini");
+        session_api_ = new API(CurDir / std::filesystem::path{"session.ini"});
         session_api_->add_metadata_str("railway", &RailwayTitle);
         session_api_->add_metadata_str("timetable", &TimetableTitle);
-        session_api_->add_metadata_str("performance_file", &PerformanceFileName);
+        session_api_->add_metadata_path("performance_file", &PerformanceFileName);
         session_api_->add_metadata_int("main_mode", &api_main_mode_);
         session_api_->add_metadata_int("operation_mode", &api_oper_mode_);
 
@@ -285,13 +263,13 @@ __fastcall TInterface::TInterface(TComponent* Owner) : TForm(Owner)
         SigsOnRightImage1->Picture->Bitmap->TransparentColor = clB5G5R5;
         SigsOnRightImage2->Picture->Bitmap->TransparentColor = clB5G5R5;
 
-        SaveRailwayDialog->InitialDir = CurDir + "\\" + RAILWAY_DIR_NAME; // default locations, may be changed when Config.txt loaded
-        LoadRailwayDialog->InitialDir = CurDir + "\\" + RAILWAY_DIR_NAME;
-        TimetableDialog->InitialDir = CurDir + "\\" + TIMETABLE_DIR_NAME;
-        SaveTTDialog->InitialDir = CurDir + "\\" + TIMETABLE_DIR_NAME;
-        LoadSessionDialog->InitialDir = CurDir + "\\" + SESSION_DIR_NAME;
-        LoadUserGraphicDialog->InitialDir = CurDir + "\\" + USERGRAPHICS_DIR_NAME; // not changeable
-        LoadCouplingFileDialog->InitialDir = CurDir; // not changeable
+        SaveRailwayDialog->InitialDir = AnsiString((CurDir / RAILWAY_DIR_NAME).c_str()); // default locations, may be changed when Config.txt loaded
+        LoadRailwayDialog->InitialDir = AnsiString((CurDir / RAILWAY_DIR_NAME).c_str());
+        TimetableDialog->InitialDir = AnsiString((CurDir / TIMETABLE_DIR_NAME).c_str());
+		SaveTTDialog->InitialDir = AnsiString((CurDir / TIMETABLE_DIR_NAME).c_str());
+        LoadSessionDialog->InitialDir = AnsiString((CurDir / SESSION_DIR_NAME).c_str());
+        LoadUserGraphicDialog->InitialDir = AnsiString((CurDir / USERGRAPHICS_DIR_NAME).c_str()); // not changeable
+        LoadCouplingFileDialog->InitialDir = AnsiString(CurDir.c_str()); // not changeable
         ReloadConfigMenuItem->Enabled = true;  //new at v2.11.0
         bool NoConfig = false;
         LoadConfigFile(0, true, NoConfig); //true for first load
@@ -2561,7 +2539,7 @@ void TInterface::LoadRailway(int Caller, AnsiString LoadFileName)
             if(GraphicsFollow)
             {
 // load user graphics
-                Track->LoadGraphics(0, VecFile, CurDir + "\\" + USERGRAPHICS_DIR_NAME); // include path to Graphics folder
+                Track->LoadGraphics(0, VecFile, CurDir / USERGRAPHICS_DIR_NAME); // include path to Graphics folder
             }
             EveryPrefDir->CheckPrefDirAgainstTrackVector(0); // clears PrefDir if any discrepancies found
             VecFile.close();
@@ -2625,13 +2603,14 @@ void TInterface::LoadRailway(int Caller, AnsiString LoadFileName)
             Display->DisplayZoomOutOffsetVHome = Display->DisplayZoomOutOffsetV; // now set zoomed out 'home' values
             Display->DisplayZoomOutOffsetHHome = Display->DisplayZoomOutOffsetH;
 
-            SavedFileName = AnsiString(LoadRailwayDialog->FileName); // includes the full PrefDir
-            if(SavedFileName != "") // shouldn't be "" at this stage but leave in as a safeguard
+            SavedFileName = std::filesystem::path{LoadRailwayDialog->FileName.c_str()}; // includes the full PrefDir
+            if(!SavedFileName.empty()) // shouldn't be "" at this stage but leave in as a safeguard
             {
-                Track->DuplicatedLocationName(1, true);
-                char LastChar = SavedFileName[SavedFileName.Length()];
-                if((LastChar == 'y') || (LastChar == 'Y'))
-                {
+				Track->DuplicatedLocationName(1, true);
+				std::string file_ext_{SavedFileName.extension().generic_string()};
+				std::transform(file_ext_.begin(), file_ext_.end(), file_ext_.begin(), [](auto c){return std::tolower(c);});
+				if(file_ext_ == ".rly")
+				{
                     if(!(Track->IsReadyForOperation(false)))
                     {
                         ShowMessage("Railway not ready for operation so unable to load as a .rly file.  Loading as a new railway under development");
@@ -2646,7 +2625,7 @@ void TInterface::LoadRailway(int Caller, AnsiString LoadFileName)
                         SetLevel1Mode(9);
                         session_api_->dump();   // update session INI file    //added at v2.10.0
                         Utilities->CallLogPop(1136);
-                        return;
+						return;
                     }
                     else
                     {
@@ -2697,7 +2676,7 @@ void __fastcall TInterface::SaveMenuItemClick(TObject *Sender)
 
     try
     {
-        TrainController->LogEvent("SaveMenuItemClick, " + SavedFileName);
+        TrainController->LogEvent(std::string{"SaveMenuItemClick, " + SavedFileName.generic_string()}.c_str());
         Utilities->CallLog.push_back(Utilities->TimeStamp() + ",SaveMenuItemClick");
         Screen->Cursor = TCursor(-11); // Hourglass;
         std::ofstream VecFile(SavedFileName.c_str());
@@ -2770,29 +2749,34 @@ void __fastcall TInterface::SaveImageNoGridMenuItemClick(TObject *Sender)
     {
         TrainController->LogEvent("SaveImageNoGridMenuItemClick");
         Utilities->CallLog.push_back(Utilities->TimeStamp() + ",SaveImageNoGridMenuItemClick");
-        if(!DirectoryExists(CurDir + "\\" + IMAGE_DIR_NAME))
+        if(!std::filesystem::exists(CurDir / IMAGE_DIR_NAME))
         {
-            ShowMessage("Failed to find folder " + IMAGE_DIR_NAME + " in the folder where 'railway.exe' resides.  Image can't be saved");
+			ShowMessage(
+				std::string{
+				"Failed to find folder " + IMAGE_DIR_NAME.generic_string() +
+				" in the folder where 'railway.exe' resides.  Image can't be saved"
+				}.c_str()
+			);
             Utilities->CallLogPop(1695);
             return;
         }
         Screen->Cursor = TCursor(-11); // Hourglass;
         TrainController->StopTTClockFlag = true; // so TTClock stopped during MasterClockTimer function
-        TrainController->RestartTime = TrainController->TTClockTime;
-        AnsiString ImageFileName = TDateTime::CurrentDateTime().FormatString("dd-mm-yyyy hh.nn.ss");
+		TrainController->RestartTime = TrainController->TTClockTime;
+		auto t = std::time(nullptr);
+		auto tm = *std::localtime(&t);
+		std::ostringstream ss;
+		ss << std::put_time(&tm, "RailwayImage_%d_%m_%Y_%H_%M_%S");
+		const std::string file_name_prefix_{ss.str()};
         // format "16/06/2009 20:55:17"
         // avoid characters in filename:=   / \ : * ? " < > |
-        ImageFileName = CurDir + "\\" + IMAGE_DIR_NAME + "\\RailwayImage " + ImageFileName + "; " + RailwayTitle + ".bmp";
-        AnsiString ShortName = "";
-        for(int x = ImageFileName.Length(); x > 0; x--)
-        {
-            if(ImageFileName[x] == '\\')
-            {
-                ShortName = ImageFileName.SubString(x + 1, ImageFileName.Length() - x - 4);
-                break;
-            }
-        }
-        ShowMessage("A bitmap file named " + ShortName + " will be created in the Images folder");
+		std::filesystem::path ImageFileName{CurDir / IMAGE_DIR_NAME};
+		ImageFileName /= std::filesystem::path{file_name_prefix_ + "_" + RailwayTitle.c_str() + ".bmp"};
+		const std::string ShortName = ImageFileName.stem().generic_string();
+
+		ShowMessage(
+			std::string{"A bitmap file named " + ShortName + " will be created in the Images folder"}.c_str()
+		);
         Graphics::TBitmap *RailwayImage = new Graphics::TBitmap;
         RailwayImage->PixelFormat = pf8bit; // needed to ensure compatibility with track
 
@@ -2830,7 +2814,7 @@ void __fastcall TInterface::SaveImageNoGridMenuItemClick(TObject *Sender)
         // then write track & text so text overwrites graphics & inactive elements //changed name & added text after inactives at v2.10.0
         Track->WriteTrackAndTextToImage(0, RailwayImage);
 
-        RailwayImage->SaveToFile(ImageFileName);
+        RailwayImage->SaveToFile(ImageFileName.c_str());
         delete RailwayImage;
         TrainController->BaseTime = TDateTime::CurrentDateTime();
         TrainController->StopTTClockFlag = false;
@@ -2855,29 +2839,31 @@ void __fastcall TInterface::SaveImageAndGridMenuItemClick(TObject *Sender)
     {
         TrainController->LogEvent("SaveImageAndGridMenuItemClick");
         Utilities->CallLog.push_back(Utilities->TimeStamp() + ",SaveImageAndGridMenuItemClick");
-        if(!DirectoryExists(CurDir + "\\" + IMAGE_DIR_NAME))
+        if(!std::filesystem::exists(CurDir / IMAGE_DIR_NAME))
         {
-            ShowMessage("Failed to find folder " + IMAGE_DIR_NAME + " in the folder where 'railway.exe' resides.  Image can't be saved");
+			ShowMessage(
+				std::string{"Failed to find folder " + IMAGE_DIR_NAME.generic_string() +
+				" in the folder where 'railway.exe' resides.  Image can't be saved"}.c_str()
+			);
             Utilities->CallLogPop(1696);
             return;
         }
         Screen->Cursor = TCursor(-11); // Hourglass;
-        TrainController->StopTTClockFlag = true; // so TTClock stopped during MasterClockTimer function
-        TrainController->RestartTime = TrainController->TTClockTime;
-        AnsiString ImageFileName = TDateTime::CurrentDateTime().FormatString("dd-mm-yyyy hh.nn.ss");
-        // format "16/06/2009 20:55:17"
-        // avoid characters in filename:=   / \ : * ? " < > |
-        ImageFileName = CurDir + "\\" + IMAGE_DIR_NAME + "\\RailwayImage " + ImageFileName + "; " + RailwayTitle + ".bmp";
-        AnsiString ShortName = "";
-        for(int x = ImageFileName.Length(); x > 0; x--)
-        {
-            if(ImageFileName[x] == '\\')
-            {
-                ShortName = ImageFileName.SubString(x + 1, ImageFileName.Length() - x - 4);
-                break;
-            }
-        }
-        ShowMessage("A bitmap file named " + ShortName + " will be created in the Images folder");
+		TrainController->StopTTClockFlag = true; // so TTClock stopped during MasterClockTimer function
+		TrainController->RestartTime = TrainController->TTClockTime;
+		auto t = std::time(nullptr);
+		auto tm = *std::localtime(&t);
+		std::ostringstream ss;
+		ss << std::put_time(&tm, "RailwayImage_%d_%m_%Y_%H_%M_%S");
+		const std::string file_prefix_{ss.str()};
+		// format "16/06/2009 20:55:17"
+		// avoid characters in filename:=   / \ : * ? " < > |
+		std::filesystem::path ImageFileName{CurDir / IMAGE_DIR_NAME};
+		ImageFileName /= std::filesystem::path{file_prefix_ + "_" + RailwayTitle.c_str() + ".bmp"};
+		const std::string ShortName = ImageFileName.stem().generic_string();
+		ShowMessage(
+			std::string{"A bitmap file named " + ShortName + " will be created in the Images folder"}.c_str()
+		);
         Graphics::TBitmap *RailwayImage = new Graphics::TBitmap;
         RailwayImage->PixelFormat = pf8bit; // needed to ensure compatibility with track
         int HPosMin = Track->GetHLocMin() * 16;
@@ -2921,7 +2907,7 @@ void __fastcall TInterface::SaveImageAndGridMenuItemClick(TObject *Sender)
         Track->WriteGraphicsToImage(1, RailwayImage);
         // then write track & text so text overwrites graphics & inactive elements
         Track->WriteTrackAndTextToImage(1, RailwayImage);  //changed name & added text after inactives at v2.10.0
-        RailwayImage->SaveToFile(ImageFileName);
+        RailwayImage->SaveToFile(ImageFileName.c_str());
         delete RailwayImage;
         TrainController->BaseTime = TDateTime::CurrentDateTime();
         TrainController->StopTTClockFlag = false;
@@ -2945,29 +2931,35 @@ void __fastcall TInterface::SaveImageAndPrefDirsMenuItemClick(TObject *Sender)
     {
         TrainController->LogEvent("SaveImageAndPrefDirsMenuItemClick");
         Utilities->CallLog.push_back(Utilities->TimeStamp() + ",SaveImageAndPrefDirsMenuItemClick");
-        if(!DirectoryExists(CurDir + "\\" + IMAGE_DIR_NAME))
+        if(!std::filesystem::exists(CurDir / IMAGE_DIR_NAME))
         {
-            ShowMessage("Failed to find folder " + IMAGE_DIR_NAME + " in the folder where 'railway.exe' resides.  Image can't be saved");
-            Utilities->CallLogPop(1697);
+			ShowMessage(
+				std::string{
+					"Failed to find folder " + IMAGE_DIR_NAME.generic_string() +
+					" in the folder where 'railway.exe' resides.  Image can't be saved"
+				}.c_str()
+			);
+			Utilities->CallLogPop(1697);
             return;
         }
         Screen->Cursor = TCursor(-11); // Hourglass;
         TrainController->StopTTClockFlag = true; // so TTClock stopped during MasterClockTimer function
         TrainController->RestartTime = TrainController->TTClockTime;
-        AnsiString ImageFileName = TDateTime::CurrentDateTime().FormatString("dd-mm-yyyy hh.nn.ss");
-        // format "16/06/2009 20:55:17"
-        // avoid characters in filename:=   / \ : * ? " < > |
-        ImageFileName = CurDir + "\\" + IMAGE_DIR_NAME + "\\RailwayImage " + ImageFileName + "; " + RailwayTitle + ".bmp";
-        AnsiString ShortName = "";
-        for(int x = ImageFileName.Length(); x > 0; x--)
-        {
-            if(ImageFileName[x] == '\\')
-            {
-                ShortName = ImageFileName.SubString(x + 1, ImageFileName.Length() - x - 4);
-                break;
-            }
-        }
-        ShowMessage("A bitmap file named " + ShortName + " will be created in the Images folder");
+        auto t = std::time(nullptr);
+		auto tm = *std::localtime(&t);
+		std::ostringstream ss;
+		ss << std::put_time(&tm, "RailwayImage_%d_%m_%Y_%H_%M_%S");
+		const std::string file_prefix_{ss.str()};
+		// format "16/06/2009 20:55:17"
+		// avoid characters in filename:=   / \ : * ? " < > |
+		std::filesystem::path ImageFileName{CurDir / IMAGE_DIR_NAME};
+		ImageFileName /= std::filesystem::path{file_prefix_ + "_" + RailwayTitle.c_str() + ".bmp"};
+		const std::string ShortName = ImageFileName.stem().generic_string();
+
+		ShowMessage(
+			std::string{"A bitmap file named " + ShortName +
+			" will be created in the Images folder"
+		}.c_str());
         Graphics::TBitmap *RailwayImage = new Graphics::TBitmap;
         RailwayImage->PixelFormat = pf8bit; // needed to ensure compatibility with track
         int HPosMin = Track->GetHLocMin() * 16;
@@ -3004,7 +2996,7 @@ void __fastcall TInterface::SaveImageAndPrefDirsMenuItemClick(TObject *Sender)
         // then write track & text so text overwrites graphics & inactive elements
         Track->WriteTrackAndTextToImage(2, RailwayImage); //changed name & added text after inactives at v2.10.0
         EveryPrefDir->WritePrefDirToImage(0, RailwayImage);
-        RailwayImage->SaveToFile(ImageFileName);
+        RailwayImage->SaveToFile(ImageFileName.c_str());
         delete RailwayImage;
         TrainController->BaseTime = TDateTime::CurrentDateTime();
         TrainController->StopTTClockFlag = false;
@@ -3028,11 +3020,13 @@ void __fastcall TInterface::SaveOperatingImageMenuItemClick(TObject *Sender)
     {
         TrainController->LogEvent("SaveOperatingImageMenuItemClick");
         Utilities->CallLog.push_back(Utilities->TimeStamp() + ",SaveOperatingImageMenuItemClick");
-        if(!DirectoryExists(CurDir + "\\" + IMAGE_DIR_NAME))
+        if(!std::filesystem::exists(CurDir / IMAGE_DIR_NAME))
         {
-            ShowMessage("Failed to find folder " + IMAGE_DIR_NAME + " in the folder where 'railway.exe' resides.  Image can't be saved");
+			ShowMessage(
+				std::string{"Failed to find folder " + IMAGE_DIR_NAME.generic_string() + " in the folder where 'railway.exe' resides.  Image can't be saved"}.c_str()
+        	);
             Utilities->CallLogPop(1702);
-            return;
+			return;
         }
         Screen->Cursor = TCursor(-11); // Hourglass;
         TrainController->StopTTClockFlag = true; // so TTClock stopped during MasterClockTimer function
@@ -3040,21 +3034,21 @@ void __fastcall TInterface::SaveOperatingImageMenuItemClick(TObject *Sender)
 
         AnsiString TimetableTimeStr = Utilities->Format96HHMMSS(TrainController->TTClockTime);
         TimetableTimeStr = TimetableTimeStr.SubString(1, 2) + '.' + TimetableTimeStr.SubString(4, 2) + '.' + TimetableTimeStr.SubString(7, 2);
-        AnsiString ImageFileName = TDateTime::CurrentDateTime().FormatString("dd-mm-yyyy hh.nn.ss");
-        // format "16/06/2009 20:55:17"
-        // avoid characters in filename:=   / \ : * ? " < > |
-        ImageFileName = CurDir + "\\" + IMAGE_DIR_NAME + "\\RailwayImage " + ImageFileName + "; Timetable time " + TimetableTimeStr + "; " + RailwayTitle +
-            "; " + TimetableTitle + ".bmp";
-        AnsiString ShortName = "";
-        for(int x = ImageFileName.Length(); x > 0; x--)
-        {
-            if(ImageFileName[x] == '\\')
-            {
-                ShortName = ImageFileName.SubString(x + 1, ImageFileName.Length() - x - 4);
-                break;
-            }
-        }
-        ShowMessage("A bitmap file named " + ShortName + " will be created in the Images folder");
+        auto t = std::time(nullptr);
+		auto tm = *std::localtime(&t);
+		std::ostringstream ss;
+		ss << std::put_time(&tm, "RailwayImage_%d_%m_%Y_%H_%M_%S");
+		const std::string file_prefix_{ss.str()};
+		std::filesystem::path ImageFileName = CurDir / IMAGE_DIR_NAME;
+		ImageFileName /= std::filesystem::path{
+			file_prefix_ +
+			"_Timetable_time_" +
+			TimetableTimeStr.c_str() +
+			"_" + RailwayTitle.c_str() +
+			"_" + TimetableTitle.c_str() + ".bmp"
+		};
+		const std::string ShortName = ImageFileName.stem().generic_string();
+        ShowMessage(std::string{"A bitmap file named " + ShortName + " will be created in the Images folder"}.c_str());
         Graphics::TBitmap *RailwayImage = new Graphics::TBitmap;
         RailwayImage->PixelFormat = pf8bit; // needed to ensure compatibility with track
         int HPosMin = Track->GetHLocMin() * 16;
@@ -3124,7 +3118,7 @@ void __fastcall TInterface::SaveOperatingImageMenuItemClick(TObject *Sender)
             }
         }
         TrainController->WriteTrainsToImage(0, RailwayImage);
-        RailwayImage->SaveToFile(ImageFileName);
+        RailwayImage->SaveToFile(ImageFileName.c_str());
         delete RailwayImage;
         TrainController->BaseTime = TDateTime::CurrentDateTime();
         TrainController->StopTTClockFlag = false;
@@ -3247,9 +3241,13 @@ void __fastcall TInterface::ExportTTMenuItemClick(TObject *Sender)
     {
         TrainController->LogEvent("ExportTTMenuItemClick");
         Utilities->CallLog.push_back(Utilities->TimeStamp() + ",ExportTTMenuItemClick");
-        if(!DirectoryExists(CurDir + "\\" + FORMATTEDTT_DIR_NAME))
+        if(!std::filesystem::exists(CurDir / FORMATTEDTT_DIR_NAME))
         {
-            ShowMessage("Failed to find folder " + FORMATTEDTT_DIR_NAME + " in the folder where 'railway.exe' resides.  Timetable can't be exported");
+			ShowMessage(
+				std::string{"Failed to find folder " + FORMATTEDTT_DIR_NAME.generic_string() +
+				" in the folder where 'railway.exe' resides.  Timetable can't be exported"
+				}.c_str()
+            );
             Utilities->CallLogPop(1699);
             return;
         }
@@ -3333,13 +3331,13 @@ void __fastcall TInterface::CreateTimetableMenuItemClick(TObject *Sender)
 // populate LocationNameComboBox if a railway is loaded, but first compile the ActiveTrackElementNameMap
         TTrack::TActiveTrackElementNameMapEntry ActiveTrackElementNameMapEntry;
         Track->ActiveTrackElementNameMap.clear();
-        for(unsigned int x = 0; x < Track->TrackVector.size(); x++)
+        for(auto track_item : Track->TrackVector)
         {
-            if((Track->TrackElementAt(1036, x).ActiveTrackElementName != "") && (Track->ContinuationNameMap.find(Track->TrackElementAt(1037, x).ActiveTrackElementName))
+            if((track_item.ActiveTrackElementName != "") && (Track->ContinuationNameMap.find(track_item.ActiveTrackElementName))
                == Track->ContinuationNameMap.end())
             {
                 // exclude any name that appears in a continuation, error message given in tt validation if try to include such a name in a tt
-                ActiveTrackElementNameMapEntry.first = Track->TrackElementAt(1038, x).ActiveTrackElementName;
+                ActiveTrackElementNameMapEntry.first = track_item.ActiveTrackElementName;
                 ActiveTrackElementNameMapEntry.second = 0; // this is a dummy value
                 Track->ActiveTrackElementNameMap.insert(ActiveTrackElementNameMapEntry);
             }
@@ -3437,8 +3435,8 @@ void __fastcall TInterface::EditTimetableMenuItemClick(TObject *Sender)
                 TimetableDialog->InitialDir = TPath::GetDirectoryName(TimetableDialog->FileName);
                 SaveTTDialog->InitialDir = TPath::GetDirectoryName(TimetableDialog->FileName);
             }
-            CreateEditTTFileName = AnsiString(TimetableDialog->FileName);
-            TrainController->LogEvent("EditTimetable " + CreateEditTTFileName);
+            CreateEditTTFileName = std::filesystem::path{TimetableDialog->FileName.c_str()};
+            TrainController->LogEvent(std::string{"EditTimetable " + CreateEditTTFileName.generic_string()}.c_str());
             std::ifstream TTBLFile(CreateEditTTFileName.c_str(), std::ios_base::binary); // open in binary to examine each character
             if(TTBLFile.is_open())
             {
@@ -3459,7 +3457,12 @@ void __fastcall TInterface::EditTimetableMenuItemClick(TObject *Sender)
             }
             else
             {
-                ShowMessage("Failed to open timetable file " + CreateEditTTFileName + ", make sure it's spelled correctly, it exists and isn't open in another application");
+				ShowMessage(
+					std::string{
+					"Failed to open timetable file " +
+					CreateEditTTFileName.generic_string() +
+					", make sure it's spelled correctly, it exists and isn't open in another application"
+				}.c_str());
                 Utilities->CallLogPop(1597);
                 return;
             }
@@ -3480,17 +3483,10 @@ void __fastcall TInterface::EditTimetableMenuItemClick(TObject *Sender)
                 CopiedEntryStr = "";
                 CopiedEntryFlag = false;
 // CreateEditTTFileName = TimetableDialog->FileName;
-                for(int x = CreateEditTTFileName.Length(); x > 0; x--)
-                {
-                    if(CreateEditTTFileName[x] == '\\')
-                    {
-                        CreateEditTTTitle = CreateEditTTFileName.SubString(x + 1, CreateEditTTFileName.Length() - x - 4);
-                        break;
-                    }
-                }
+				CreateEditTTTitle = CreateEditTTFileName.filename().c_str();
                 char *TimetableEntryString = new char[10000];
                 while(true)
-                {
+				{
                     TTBLFile.getline(TimetableEntryString, 10000, '\0'); // pick up the entire AnsiString, including any embedded newlines
                     if(TTBLFile.eof() && (TimetableEntryString[0] == '\0')) // stores a null in 1st position if doesn't load any characters
                     {
@@ -3507,7 +3503,11 @@ void __fastcall TInterface::EditTimetableMenuItemClick(TObject *Sender)
             }
             else
             {
-                ShowMessage("Failed to open timetable file " + CreateEditTTFileName + ", make sure it's spelled correctly, it exists and isn't open in another application");
+				ShowMessage(
+					std::string{"Failed to open timetable file " +
+					CreateEditTTFileName.generic_string() +
+					", make sure it's spelled correctly, it exists and isn't open in another application"
+				}.c_str());
                 Utilities->CallLogPop(1654);
                 return;
             }
@@ -4672,15 +4672,8 @@ void __fastcall TInterface::SaveTTButtonClick(TObject *Sender)
                     TimetableDialog->InitialDir = TPath::GetDirectoryName(SaveTTDialog->FileName);
                     SaveTTDialog->InitialDir = TPath::GetDirectoryName(SaveTTDialog->FileName);
                 }
-                CreateEditTTFileName = AnsiString(SaveTTDialog->FileName);
-                for(int x = CreateEditTTFileName.Length(); x > 0; x--)
-                {
-                    if(CreateEditTTFileName[x] == '\\')
-                    {
-                        CreateEditTTTitle = CreateEditTTFileName.SubString(x + 1, CreateEditTTFileName.Length() - x - 4);
-                        break;
-                    }
-                }
+				CreateEditTTFileName = std::filesystem::path{SaveTTDialog->FileName.c_str()};
+				CreateEditTTTitle = CreateEditTTFileName.stem().c_str();
                 TTBLFile.open(CreateEditTTFileName.c_str(), std::ios_base::binary); // if text then each time sees a "\r\n" pair enters "\r\n\n" because '\n'
                 // on its own causes "\r\n' to ne inserted, binary just enters characters as they are
             }
@@ -4703,7 +4696,8 @@ void __fastcall TInterface::SaveTTButtonClick(TObject *Sender)
         }
         else
         {
-            ShowMessage(CreateEditTTFileName + " failed to open, ensure not already open in another application");
+			ShowMessage(
+			std::string{CreateEditTTFileName.generic_string() + " failed to open, ensure not already open in another application"}.c_str());
         }
         Level1Mode = TimetableMode;
         SetLevel1Mode(97);
@@ -4738,15 +4732,8 @@ void __fastcall TInterface::SaveTTAsButtonClick(TObject *Sender)
                 TimetableDialog->InitialDir = TPath::GetDirectoryName(SaveTTDialog->FileName);
                 SaveTTDialog->InitialDir = TPath::GetDirectoryName(SaveTTDialog->FileName);
             }
-            CreateEditTTFileName = SaveTTDialog->FileName;
-            for(int x = SaveTTDialog->FileName.Length(); x > 0; x--)
-            {
-                if(SaveTTDialog->FileName[x] == '\\')
-                {
-                    CreateEditTTTitle = SaveTTDialog->FileName.SubString(x + 1, SaveTTDialog->FileName.Length() - x - 4);
-                    break;
-                }
-            }
+			CreateEditTTFileName = std::filesystem::path{SaveTTDialog->FileName.c_str()};
+			CreateEditTTTitle = CreateEditTTFileName.stem().c_str();
             TTBLFile.open(CreateEditTTFileName.c_str(), std::ios_base::binary); // if text then each time sees a "\r\n" pair enters "\r\n\n" because '\n'
             // on its own causes "\r\n' to ne inserted, binary just enters characters as they are
         }
@@ -4768,7 +4755,7 @@ void __fastcall TInterface::SaveTTAsButtonClick(TObject *Sender)
         }
         else
         {
-            ShowMessage(CreateEditTTFileName + " failed to open, ensure not already open in another application");
+            ShowMessage(std::string{CreateEditTTFileName.generic_string() + " failed to open, ensure not already open in another application"}.c_str());
         }
         Level1Mode = TimetableMode;
         SetLevel1Mode(117);
@@ -5122,25 +5109,18 @@ void __fastcall TInterface::ExportTTButtonClick(TObject *Sender)
     {
         TrainController->LogEvent("ExportTTButtonClick");
         Utilities->CallLog.push_back(Utilities->TimeStamp() + ",ExportTTButtonClick");
-        if(!DirectoryExists(CurDir + "\\" + FORMATTEDTT_DIR_NAME))
+        if(!std::filesystem::exists(CurDir / FORMATTEDTT_DIR_NAME))
         {
-            ShowMessage("Failed to find folder " + FORMATTEDTT_DIR_NAME + " in the folder where 'railway.exe' resides.  Timetable can't be exported");
+			ShowMessage(std::string{"Failed to find folder " + FORMATTEDTT_DIR_NAME.generic_string() + " in the folder where 'railway.exe' resides.  Timetable can't be exported"}.c_str());
             Utilities->CallLogPop(1698);
             return;
         }
 // Screen->Cursor = TCursor(-11); // Hourglass; - no good setting here as it's reset by ShowMessage in CreateFormattedTimetable. It's set there after
 // the message instead, but reset here afterwards
         AnsiString TTTitle;
-        if(RlyFile && TimetableValidFlag && (CreateEditTTFileName != ""))
+		if(RlyFile && TimetableValidFlag && (CreateEditTTFileName != ""))
         {
-            for(int x = CreateEditTTFileName.Length(); x > 0; x--) // first need to strip out the timetable title from the full name
-            {
-                if(CreateEditTTFileName[x] == '\\')
-                {
-                    TTTitle = CreateEditTTFileName.SubString(x + 1, CreateEditTTFileName.Length() - x - 4);
-                    break;
-                }
-            }
+			TTTitle = CreateEditTTFileName.stem().c_str();
             TrainController->CreateFormattedTimetable(1, RailwayTitle, TTTitle, CurDir);
         }
         Screen->Cursor = TCursor(-2); // Arrow - reset after above function returns
@@ -6011,7 +5991,7 @@ void __fastcall TInterface::ExitMenuItemClick(TObject *Sender)
                 return;
             }
         }
-        if((TempTTFileName != "") && FileExists(TempTTFileName))
+        if((!TempTTFileName.empty()) && std::filesystem::exists(TempTTFileName))
         {
             std::filesystem::remove(TempTTFileName);
         }
@@ -6821,7 +6801,7 @@ void TInterface::MainScreenMouseDown2(int Caller, TMouseButton Button, TShiftSta
             }
             else
             {
-                ShowMessage("Unable to find graphic file " + SelectedGraphicFileName + ". Check it still exists.");
+                ShowMessage(std::string{"Unable to find graphic file " + SelectedGraphicFileName.generic_string() + ". Check it still exists."}.c_str());
                 Utilities->CallLogPop(2195);
                 return;
             }
@@ -9222,8 +9202,8 @@ void TInterface::ClockTimer2(int Caller)
             int ScreenX = Mouse->CursorPos.x - MainScreen->ClientOrigin.x;
             int ScreenY = Mouse->CursorPos.y - MainScreen->ClientOrigin.y;
             int HLoc, VLoc;
-            AnsiString MouseStr = "Posx: " + AnsiString(ScreenX) + "; Posy: " + AnsiString(ScreenY);
-            DevelopmentPanel->Caption = CurDir + " " + MouseStr;
+			const std::string MouseStr = "Posx: " + std::to_string(ScreenX) + "; Posy: " + std::to_string(ScreenY);
+			DevelopmentPanel->Caption = std::string{CurDir.generic_string() + " " + MouseStr}.c_str();
             Track->GetTrackLocsFromScreenPos(7, HLoc, VLoc, ScreenX, ScreenY);
 
             AnsiString InARoute = "No";    //added at v2.15.0 for diagnostics
@@ -9244,7 +9224,7 @@ void TInterface::ClockTimer2(int Caller)
                     RoutePrefDirPos = R2It->second.second;
                 }
 
-                DevelopmentPanel->Caption = MouseStr + "; TVPos: " + AnsiString(Position) + "; H: " + AnsiString(HLoc) + "; V: " + AnsiString(VLoc) +
+                DevelopmentPanel->Caption = AnsiString(MouseStr.c_str()) + "; TVPos: " + AnsiString(Position) + "; H: " + AnsiString(HLoc) + "; V: " + AnsiString(VLoc) +
                     "; SpTg: " + AnsiString(TrackElement.SpeedTag) + "; Type: " + Type[TrackElement.TrackType] + "; Att: " + AnsiString(TrackElement.Attribute)
                     + "; TrID: " + AnsiString(TrackElement.TrainIDOnElement) + "; TrID01: " + AnsiString(TrackElement.TrainIDOnBridgeOrFailedPointOrigSpeedLimit01) +
                     "; TrID23: " + AnsiString(TrackElement.TrainIDOnBridgeOrFailedPointOrigSpeedLimit23) + "; " + TrackElement.LocationName + "; " +
@@ -13738,7 +13718,7 @@ void __fastcall TInterface::FormClose(TObject *Sender, TCloseAction &Action)
             TrainController->SendPerformanceSummary(1, Utilities->PerformanceFile);
             Utilities->PerformanceFile.close();
         }
-        if((TempTTFileName != "") && FileExists(TempTTFileName))
+        if((!TempTTFileName.empty()) && std::filesystem::exists(TempTTFileName))
         {
             std::filesystem::remove(TempTTFileName);
         }
@@ -15496,12 +15476,12 @@ void __fastcall TInterface::ReselectUserGraphicClick(TObject *Sender)
     try
     {
         Utilities->CallLog.push_back(Utilities->TimeStamp() + ",ReselectUserGraphicClick");
-        TrainController->LogEvent("ReselectUserGraphicClick " + SelectedGraphicFileName);
+        TrainController->LogEvent(std::string{"ReselectUserGraphicClick " + SelectedGraphicFileName.generic_string()}.c_str());
         UserGraphicReselectPanel->Visible = false;
         TTrack::TUserGraphicMap::iterator UGMIt = Track->UserGraphicMap.find(SelectedGraphicFileName);
         if(UGMIt == Track->UserGraphicMap.end())
         {
-            ShowMessage("Unable to find graphic file " + SelectedGraphicFileName + ". Check it still exists.");
+            ShowMessage(std::string{"Unable to find graphic file " + SelectedGraphicFileName.generic_string() + ". Check it still exists."}.c_str());
             Utilities->CallLogPop(2196);
             return;
         }
@@ -15628,15 +15608,8 @@ void __fastcall TInterface::CPGenFileButtonClick(TObject *Sender)
             AnsiString TTTitle;
             if(RlyFile && TimetableValidFlag && (CreateEditTTFileName != ""))
             {
-                for(int x = CreateEditTTFileName.Length(); x > 0; x--) // first need to strip out the timetable title from the full name
-                {
-                    if(CreateEditTTFileName[x] == '\\')
-                    {
-                        TTTitle = CreateEditTTFileName.SubString(x + 1, CreateEditTTFileName.Length() - x - 4);
-                        break;
-                    }
-                }
-                if(TrainController->CreateTTAnalysisFile(0, RailwayTitle, TTTitle, CurDir, CPArrivalsCheckBox->Checked, CPDeparturesCheckBox->Checked,
+                TTTitle = CreateEditTTFileName.stem().c_str();
+                if(TrainController->CreateTTAnalysisFile(0, RailwayTitle, TTTitle, CurDir.c_str(), CPArrivalsCheckBox->Checked, CPDeparturesCheckBox->Checked,
                                                          CPAtLocCheckBox->Checked, CPDirectionsCheckBox->Checked, CPEditArrRange->Text.ToInt(), CPEditDepRange->Text.ToInt()))
                 {
                     ShowMessage("Analysis complete and file created");
@@ -15680,8 +15653,8 @@ void TInterface::LoadConfigFile(int Caller, bool FirstLoad, bool &NoConfigFile)
         //throw Exception(""); to test error message
         Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",LoadConfigFile," + AnsiString((unsigned char)FirstLoad));
         int LengthInt, SpeedInt;
-        NoConfigFile = false;
-        std::ifstream ConfigFile((CurDir + "\\Config.txt").c_str()); // added at v2.6.0 to set save & load directories for railways, timetables & session & to
+		NoConfigFile = false;
+		std::ifstream ConfigFile(CurDir / "Config.txt"); // added at v2.6.0 to set save & load directories for railways, timetables & session & to
         if(ConfigFile.fail()) // no Config file                           //replace Signal.hnd, Background.col and GNU
         {
             NoConfigFile = true;
@@ -15897,11 +15870,11 @@ void TInterface::LoadConfigFile(int Caller, bool FirstLoad, bool &NoConfigFile)
         SigsOnRightImage1->Visible = false;
         SigsOnRightImage2->Visible = false;
         Utilities->clTransparent = clB0G0R0; // default black background;
-        SaveRailwayDialog->InitialDir = CurDir + "\\" + RAILWAY_DIR_NAME;
-        LoadRailwayDialog->InitialDir = CurDir + "\\" + RAILWAY_DIR_NAME;
-        TimetableDialog->InitialDir = CurDir + "\\" + TIMETABLE_DIR_NAME;
-        SaveTTDialog->InitialDir = CurDir + "\\" + TIMETABLE_DIR_NAME;
-        LoadSessionDialog->InitialDir = CurDir + "\\" + SESSION_DIR_NAME;
+		SaveRailwayDialog->InitialDir = (CurDir / RAILWAY_DIR_NAME).c_str();
+		LoadRailwayDialog->InitialDir = (CurDir / RAILWAY_DIR_NAME).c_str();
+		TimetableDialog->InitialDir = (CurDir / TIMETABLE_DIR_NAME).c_str();
+		SaveTTDialog->InitialDir = (CurDir / TIMETABLE_DIR_NAME).c_str();
+		LoadSessionDialog->InitialDir = (CurDir / SESSION_DIR_NAME).c_str();
         Utilities->DefaultTrackLength = 100;
         Utilities->DefaultTrackSpeedLimit = 200;
     }
@@ -15917,8 +15890,8 @@ void TInterface::SaveConfigFile(int Caller)
         Utilities->CallLog.push_back(Utilities->TimeStamp() + ",SaveConfigFile");
         // rewrite ConfigFile with signal handedness, background colour & InitialDir values (may be same but no matter)
         AnsiString ColourStr = "", SignalStr = "", LengthStr = "", SpeedStr = "";
-        remove((CurDir + "\\Config.txt").c_str());
-        std::ofstream ConfigFile((CurDir + "\\Config.txt").c_str());
+        std::filesystem::remove(CurDir / "Config.txt");
+        std::ofstream ConfigFile(CurDir / "Config.txt");
         ColourStr = "black";
         SignalStr = "left";
         if((Utilities->DefaultTrackLength < 10) || (Utilities->DefaultTrackLength > 99999))
@@ -16334,9 +16307,9 @@ bool TInterface::ClearEverything(int Caller)
 
 // ---------------------------------------------------------------------------
 
-bool TInterface::FileIntegrityCheck(int Caller, char *FileName) const // true for success
+bool TInterface::FileIntegrityCheck(int Caller, std::filesystem::path FileName) const // true for success
 {
-    Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",FileIntegrityCheck," + AnsiString(FileName));
+	Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",FileIntegrityCheck," + FileName.c_str());
     std::ifstream VecFile(FileName);
 
     if(VecFile.is_open())
@@ -16381,7 +16354,7 @@ bool TInterface::FileIntegrityCheck(int Caller, char *FileName) const // true fo
         }
         if(GraphicsFollow)
         {
-            if(!Track->CheckUserGraphics(0, VecFile, CurDir + "\\" + USERGRAPHICS_DIR_NAME)) // include path to Graphics folder
+            if(!Track->CheckUserGraphics(0, VecFile, CurDir / USERGRAPHICS_DIR_NAME)) // include path to Graphics folder
             {
                 VecFile.close();
                 Utilities->CallLogPop(2186);
@@ -16539,8 +16512,9 @@ void TInterface::SetLevel1Mode(int Caller)
 // note that if selecting zoom back in then this will be called before ZoomOutFlag is reset so won't
 // reset GapFlashFlag
     switch(Level1Mode) // use the data member
-    {
-    case BaseMode:
+	{
+	case BaseMode:
+	{
         CopyMenuItem->ShortCut = TextToShortCut(""); // added these for v2.1.0 to set default values after use of the 'Edit' menu during track building
         CutMenuItem->ShortCut = TextToShortCut(""); // to allow normal cutting/copying/pasting, especially in timetable construction or editing
         PasteMenuItem->ShortCut = TextToShortCut("");
@@ -16670,7 +16644,7 @@ void TInterface::SetLevel1Mode(int Caller)
             SaveOperatingImageMenuItem->Enabled = false;
             ClearAllMenuItem->Enabled = true;
         }
-        if(SavedFileName == "")
+        if(SavedFileName.empty())
         {
             SaveMenuItem->Enabled = false;
         }
@@ -16678,7 +16652,7 @@ void TInterface::SetLevel1Mode(int Caller)
         {
             SaveMenuItem->Enabled = false;
         }
-        else if((SavedFileName[SavedFileName.Length()] == 'y') || (SavedFileName[SavedFileName.Length()] == 'Y')) // 'rly' file
+        else if((SavedFileName.stem() == ".rly") || (SavedFileName.stem() == ".RLY")) // 'rly' file
         {
             if(!(Track->IsReadyForOperation(false)))
             {
@@ -16716,8 +16690,9 @@ void TInterface::SetLevel1Mode(int Caller)
         Track->TSRVector.clear();
         Track->SimpleVector.clear();
         break;
-
-    case TimetableMode:
+	}
+	case TimetableMode:
+	{
         if(TwoLocationNamePanel->Visible) //added at v2.9.1 so panel persists until button clicked
         {
             break;
@@ -16734,9 +16709,9 @@ void TInterface::SetLevel1Mode(int Caller)
         TimetableEditPanel->BringToFront();
         TimetableHandler();
         break;
-
-    case TrackMode:
-    {
+	}
+	case TrackMode:
+	{
         if(Level2TrackMode == CutMoving)
         {
             Level2TrackMode = Pasting;     // paste the selection
@@ -16811,9 +16786,10 @@ void TInterface::SetLevel1Mode(int Caller)
         SetTrackBuildImages(1);
         TimetableTitle = "";
         SetCaption(0);
-    } break;
-
-    case PrefDirMode:
+    	break;
+	}
+	case PrefDirMode:
+	{
         Screen->Cursor = TCursor(-11); //Hourglass in case many pref dirs
         Level2TrackMode = NoTrackMode;
         Level2PrefDirMode = NoPrefDirMode;
@@ -16858,8 +16834,9 @@ void TInterface::SetLevel1Mode(int Caller)
 // SetCaption();
         Screen->Cursor = TCursor(-2); //Arrow
         break;
-
-    case OperMode: // if there are any PrefDirs, set to SigPref, else to NoSigNonPref; start in Paused mode
+	}
+	case OperMode: // if there are any PrefDirs, set to SigPref, else to NoSigNonPref; start in Paused mode
+	{
         Level2TrackMode = NoTrackMode;
         Level2PrefDirMode = NoPrefDirMode;
         Level2OperMode = PreStart;
@@ -16939,16 +16916,22 @@ void TInterface::SetLevel1Mode(int Caller)
         TrainController->LastSessionSaveTTClockTime = TrainController->TimetableStartTime; // added at v2.5.0
         Utilities->LastTSRCheckTime = TrainController->TTClockTime; //added at v2.14.0 so don't have any TSRs until 1 min after start
 
-        PerformanceFileName = TDateTime::CurrentDateTime().FormatString("dd-mm-yyyy hh.nn.ss");
-        // format "16/06/2009 20:55:17"
-        // avoid characters in filename:=   / \ : * ? " < > |
-        PerformanceFileName = CurDir + "\\" + PERFLOG_DIR_NAME + "\\Log " + PerformanceFileName + "; " + RailwayTitle + "; " + TimetableTitle + ".txt";
+		auto t = std::time(nullptr);
+		auto tm = *std::localtime(&t);
+		std::ostringstream ss;
+		ss << std::put_time(&tm, "Log_%d_%m_%Y_%H_%M_%S");
+        const std::string file_prefix_{ss.str()};
+		PerformanceFileName = CurDir / PERFLOG_DIR_NAME;
+		PerformanceFileName /= std::filesystem::path{
+			file_prefix_ + "_" + std::string{RailwayTitle.c_str()} +
+			"_" + std::string{TimetableTitle.c_str()} + ".txt"
+		};
 
         Utilities->PerformanceFile.open(PerformanceFileName.c_str(), std::ios_base::out);
         if(Utilities->PerformanceFile.fail())
         {
-            ShowMessage("Performance logfile failed to open, logs won't be saved. Ensure that there is a folder named " + PERFLOG_DIR_NAME +
-                        " in the folder where the 'Railway.exe' program file resides");
+			ShowMessage(std::string{"Performance logfile failed to open, logs won't be saved. Ensure that there is a folder named " + PERFLOG_DIR_NAME.generic_string() +
+                        " in the folder where the 'Railway.exe' program file resides"}.c_str());
         }
         PerfLogForm->PerformanceLog(16, "Performance Log:");  //these statements separated at v2.13.0 as didn't separate in on-screen log
         PerfLogForm->PerformanceLog(21, "Railway: " + RailwayTitle);
@@ -17049,8 +17032,9 @@ void TInterface::SetLevel1Mode(int Caller)
         FailureMenu->Enabled = true;
         ClearandRebuildRailway(55); // so points display with one fillet
         break;
-
-    case RestartSessionOperMode: // restart in Paused mode after a session load, sets both Level1Mode & Level2OperMode
+	}
+	case RestartSessionOperMode: // restart in Paused mode after a session load, sets both Level1Mode & Level2OperMode
+	{
         Level1Mode = OperMode;
 // Level2OperMode = Paused; this is now loaded during LoadInterface & could be PreStart of Paused
         Level2TrackMode = NoTrackMode;
@@ -17148,12 +17132,14 @@ void TInterface::SetLevel1Mode(int Caller)
             TrainController->MTBFHours = 0;
         }
         break;
-
-    default:
+	}
+	default:
+	{
         // No further recursion in BaseMode so OK
         Level1Mode = BaseMode;
         SetLevel1Mode(29);
         break;
+	}
     }
     api_main_mode_ = int(Level1Mode);   //added at v2.10.0
     session_api_->dump();   // update session INI file
@@ -19616,21 +19602,18 @@ void TInterface::SetSaveMenuAndButtons(int Caller)
         }
     }
     else
-    {
+	{
+		std::string file_suffix_{SavedFileName.extension().generic_string()};
+		std::transform(file_suffix_.begin(), file_suffix_.end(), file_suffix_.begin(), [](auto c){return std::tolower(c);});
+
         if(!FileChangedFlag || Display->ZoomOutFlag || (Track->NoActiveOrInactiveTrack(11) && (TextHandler->TextVectorSize(14) == 0)
                                                         && Track->UserGraphicVector.empty()))
         {
             SaveRailwayButtonsFlag = false;
         }
-        else if(SavedFileName != "")
+		else if(!SavedFileName.empty() && file_suffix_ == ".rly" && !Track->IsReadyForOperation(false))
         {
-            if((SavedFileName[SavedFileName.Length()] == 'y') || (SavedFileName[SavedFileName.Length()] == 'Y')) // 'rly' file
-            {
-                if(!(Track->IsReadyForOperation(false)))
-                {
-                    SaveRailwayButtonsFlag = false; // can't save under its old name as not now a .rly file
-                }
-            }
+			SaveRailwayButtonsFlag = false; // can't save under its old name as not now a .rly file
         }
     }
     if(SaveRailwayButtonsFlag && (Level1Mode == BaseMode))
@@ -19959,7 +19942,7 @@ void TInterface::ErrorLog(int Caller, AnsiString Message)
     Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + "," + Message);
     Utilities->CallLog.push_front("Version: " + ProgramVersion + "; Time and date: " + Utilities->DateTimeStamp());
     SaveErrorFile();
-    if((TempTTFileName != "") && FileExists(TempTTFileName))
+    if(!TempTTFileName.empty() && std::filesystem::exists(TempTTFileName))
     {
         std::filesystem::remove(TempTTFileName);
     }
@@ -20312,16 +20295,21 @@ void TInterface::SaveSession(int Caller)
     {
         TrainController->LogEvent("SaveSession");
         Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",SaveSession");
-        AnsiString CurrentDateTimeStr = "", TimetableTimeStr = "", SessionFileStr = "";
+		AnsiString CurrentDateTimeStr = "", TimetableTimeStr = "";
+		std::filesystem::path SessionFileStr{""};
         Screen->Cursor = TCursor(-11); // Hourglass;
-        CurrentDateTimeStr = TDateTime::CurrentDateTime().FormatString("dd-mm-yyyy hh.nn.ss");
-        // avoid characters in filename:=   / \ : * ? " < > |
         TimetableTimeStr = Utilities->Format96HHMMSS(TrainController->TTClockTime);
         TimetableTimeStr = TimetableTimeStr.SubString(1, 2) + '.' + TimetableTimeStr.SubString(4, 2) + '.' + TimetableTimeStr.SubString(7, 2);
 // SessionFileStr = CurDir + "\\" + SESSION_DIR_NAME + "\\Session " + CurrentDateTimeStr + "; Timetable time " + TimetableTimeStr + "; " + RailwayTitle +
 // "; " + TimetableTitle + ".ssn";
-        SessionFileStr = LoadSessionDialog->InitialDir + "\\Session " + CurrentDateTimeStr + "; Timetable time " + TimetableTimeStr + "; " + RailwayTitle +
-            "; " + TimetableTitle + ".ssn";
+        auto t = std::time(nullptr);
+		auto tm = *std::localtime(&t);
+		std::ostringstream ss;
+		ss << std::put_time(&tm, "Session_%d_%m_%Y_%H_%M_%S_Timetable_time_");
+		const std::string file_name_prefix_{ss.str()};
+		SessionFileStr = std::filesystem::path{LoadSessionDialog->InitialDir.c_str()};
+		SessionFileStr /= std::filesystem::path{file_name_prefix_ + "_Timetable_Time_" + std::string{TimetableTimeStr.c_str()} + "_" + std::string(RailwayTitle.c_str()) +
+			"_" + std::string(TimetableTitle.c_str()) + ".ssn"};
         std::ofstream SessionFile(SessionFileStr.c_str());
         if(!(SessionFile.fail()))
         {
@@ -20366,7 +20354,7 @@ void TInterface::SaveSession(int Caller)
             if(!(SaveTimetableToSessionFile(0, SessionFile, SessionFileStr))) //includes the timetable itself + TrainOperatingData
             {
                 SessionFile.close();
-                std::filesystem::remove(SessionFileStr);
+                std::filesystem::remove(std::filesystem::path{SessionFileStr.c_str()});
                 Screen->Cursor = TCursor(-2); // Arrow;
                 TrainController->StopTTClockMessage(3, "Error saving file, unable to save session");
                 Utilities->CallLogPop(1150);
@@ -20646,7 +20634,7 @@ void TInterface::LoadSession(int Caller)
                     EveryPrefDir->LoadPrefDir(1, SessionFile);
                     if(GraphicsFollow)
                     {
-                        Track->LoadGraphics(1, SessionFile, CurDir + "\\" + USERGRAPHICS_DIR_NAME); // include path to Graphics folder);
+                        Track->LoadGraphics(1, SessionFile, CurDir / USERGRAPHICS_DIR_NAME); // include path to Graphics folder);
                     }
                     if(!EveryPrefDir->CheckPrefDirAgainstTrackVectorNoMessage(0))
                     {
@@ -20704,15 +20692,21 @@ void TInterface::LoadSession(int Caller)
                     // load performance file + populate the performance log
                     TempString = Utilities->LoadFileString(SessionFile); // ***Performance file***
                     // first reset the performance file name and open it before reloading it
-                    PerformanceFileName = TDateTime::CurrentDateTime().FormatString("dd-mm-yyyy hh.nn.ss");
-                    // avoid characters in filename:=   / \ : * ? " < > |
-                    PerformanceFileName = CurDir + "\\" + PERFLOG_DIR_NAME + "\\Log " + PerformanceFileName + "; " + RailwayTitle + "; " +
-                        TimetableTitle + ".txt";
+                    auto t = std::time(nullptr);
+					auto tm = *std::localtime(&t);
+					std::ostringstream ss;
+					ss << std::put_time(&tm, "Log_%d_%m_%Y_%H_%M_%S");
+					const std::string file_prefix_{ss.str()};
+					PerformanceFileName = CurDir / PERFLOG_DIR_NAME;
+					PerformanceFileName /= std::filesystem::path{
+						file_prefix_ + "_" + std::string{RailwayTitle.c_str()} +
+						"_" + std::string{TimetableTitle.c_str()} + ".txt"
+					};
                     Utilities->PerformanceFile.open(PerformanceFileName.c_str(), std::ios_base::out);
                     if(Utilities->PerformanceFile.fail())
                     {
-                        ShowMessage("Performance logfile failed to open, logs won't be saved. Ensure that there is a folder named " + PERFLOG_DIR_NAME +
-                                    " in the folder where the 'Railway.exe' program file resides");
+						ShowMessage(std::string{"Performance logfile failed to open, logs won't be saved. Ensure that there is a folder named " + PERFLOG_DIR_NAME.generic_string() +
+                                    " in the folder where the 'Railway.exe' program file resides"}.c_str());
                     }
                     // now reload the performance file (also populates PerformanceLogBox)
                     LoadPerformanceFile(0, SessionFile);
@@ -21284,7 +21278,8 @@ void TInterface::LoadInterface(int Caller, std::ifstream &SessionFile)
         Level2OperMode = Paused;
     }
     RailwayTitle = Utilities->LoadFileString(SessionFile);
-    SavedFileName = CurDir + "\\" + RAILWAY_DIR_NAME + "\\" + RailwayTitle + ".rly";
+	SavedFileName = CurDir / RAILWAY_DIR_NAME;
+	SavedFileName /= std::filesystem::path{std::string{RailwayTitle.c_str()} + ".rly"};
 
     TimetableTitle = Utilities->LoadFileString(SessionFile);
     PreferredRoute = Utilities->LoadFileBool(SessionFile);
@@ -21566,10 +21561,10 @@ bool TInterface::CheckInterface(int Caller, std::ifstream &SessionFile)
 
 // ---------------------------------------------------------------------------
 
-bool TInterface::SaveTimetableToSessionFile(int Caller, std::ofstream &SessionFile, AnsiString SessionFileStr)
+bool TInterface::SaveTimetableToSessionFile(int Caller, std::ofstream &SessionFile, std::filesystem::path SessionFileStr)
 {
-    Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",SaveTimetableToSessionFile," + SessionFileStr);
-    if(!FileExists(TempTTFileName))
+    Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",SaveTimetableToSessionFile," + SessionFileStr.c_str());
+    if(!std::filesystem::exists(TempTTFileName))
     {
         Utilities->CallLogPop(1862);
         return(false);
@@ -21577,14 +21572,14 @@ bool TInterface::SaveTimetableToSessionFile(int Caller, std::ofstream &SessionFi
     SessionFile.close(); // close & re-open in append & binary mode so LF characters copy as LFs & not CRLFs
     SessionFile.open(SessionFileStr.c_str(), std::ios_base::app | std::ios_base::binary); // file pointer set to end
 
-    int Handle = FileOpen(TempTTFileName, fmOpenRead);
+    int Handle = FileOpen(TempTTFileName.c_str(), fmOpenRead);
     int Count = 0;
 
     while(Handle < 0) // this type of file use failed when used in SaveTempTimetableFile when used to resave timetable.tmp from
                       // temp .ttb file, but changed that to avoid so many rapid file actions in quick succession & been OK since
                       // then, but nevertheless have 10 retries before giving message to be on safe side
     {
-        Handle = FileOpen(TempTTFileName, fmOpenRead);
+        Handle = FileOpen(TempTTFileName.c_str(), fmOpenRead);
         Count++;
         Delay(1, 50); // 50mSec delay between tries
         if(Count > 10)
@@ -21632,10 +21627,10 @@ bool TInterface::SaveTimetableToSessionFile(int Caller, std::ofstream &SessionFi
 
 // ---------------------------------------------------------------------------
 
-bool TInterface::SaveTimetableToErrorFile(int Caller, std::ofstream &ErrorFile, AnsiString ErrorFileStr, AnsiString TimetableFileName)
+bool TInterface::SaveTimetableToErrorFile(int Caller, std::ofstream &ErrorFile, AnsiString ErrorFileStr, std::filesystem::path TimetableFileName)
 {
-    Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",SaveTimetableToErrorFile," + ErrorFileStr + "," + TimetableFileName);
-    if(!FileExists(TimetableFileName))
+    Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",SaveTimetableToErrorFile," + ErrorFileStr + "," + TimetableFileName.c_str());
+    if(!std::filesystem::exists(TimetableFileName))
     {
         Utilities->CallLogPop(1863);
         return(false);
@@ -21643,14 +21638,14 @@ bool TInterface::SaveTimetableToErrorFile(int Caller, std::ofstream &ErrorFile, 
     ErrorFile.close(); // close & re-open in append & binary mode so LF characters copy as LFs & not CRLFs
     ErrorFile.open(ErrorFileStr.c_str(), std::ios_base::app | std::ios_base::binary); // file pointer set to end
 
-    int Handle = FileOpen(TimetableFileName, fmOpenRead);
+    int Handle = FileOpen(TimetableFileName.c_str(), fmOpenRead);
     int Count = 0;
 
     while(Handle < 0) // this type of file use failed when used in SaveTempTimetableFile when used to resave timetable.tmp from
                       // temp .ttb file, but changed that to avoid so many rapid file actions in quick succession & been OK since
                       // then, but nevertheless have 10 retries before giving message to be on safe side
     {
-        Handle = FileOpen(TimetableFileName, fmOpenRead);
+        Handle = FileOpen(TimetableFileName.c_str(), fmOpenRead);
         Count++;
         Delay(5, 50); // 50mSec delay between tries
         if(Count > 10)
@@ -21699,18 +21694,20 @@ bool TInterface::LoadTimetableFromSessionFile(int Caller, std::ifstream &Session
     TrainController->BFLow = false;
     TrainController->PwrHigh = false;
     TrainController->SigSHigh = false;
-    TrainController->SigSLow = false;
-    if((TempTTFileName != "") && FileExists(TempTTFileName))
-    {
-        std::filesystem::remove(TempTTFileName);
+	TrainController->SigSLow = false;
+	if(!TempTTFileName.empty() && std::filesystem::exists(TempTTFileName))
+	{
+		std::filesystem::remove(TempTTFileName);
     }
-    int TempTTFileNumber = 0;
+	int TempTTFileNumber = 0;
 
-    while(FileExists(CurDir + "\\TmpTT" + AnsiString(TempTTFileNumber) + ".tmp"))
+	const std::filesystem::path temp_file_{"TmpTT" + std::to_string(TempTTFileNumber) + ".tmp"};
+
+	while(std::filesystem::exists(CurDir / temp_file_))
     {
         TempTTFileNumber++;
     }
-    TempTTFileName = CurDir + "\\TmpTT" + AnsiString(TempTTFileNumber) + ".tmp";
+    TempTTFileName = temp_file_.c_str();
 
     std::ofstream TTBFile(TempTTFileName.c_str()); // use text mode as SessionFile is in text mode, so CRLFs read as LFs, and LFs write as CRLFs.
     int Count;
@@ -22125,7 +22122,7 @@ bool TInterface::BuildTrainDataVectorForValidateFile(int Caller, std::ifstream &
 
 // ---------------------------------------------------------------------------
 
-bool TInterface::SessionFileIntegrityCheck(int Caller, AnsiString FileName)
+bool TInterface::SessionFileIntegrityCheck(int Caller, std::filesystem::path FileName)
 /* Here need to check as far as timetable, then go back and load the track, because the timetable compilation check
 relies on the track vector and map being in place.  Won't affect the later load because the vector and map are cleared
 before loading.
@@ -22139,7 +22136,7 @@ Also, with hindsight, I wish I had just saved and reloaded the timetable vectors
 would probably have been easier.  To change it now though would cause compatibility problems with sessions created by earlier versions.
 */
 {
-    Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",SessionFileIntegrityCheck," + FileName);
+    Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",SessionFileIntegrityCheck," + FileName.c_str());
     std::ifstream InFile(FileName.c_str());
 // first pass as far as timetable
     int NumberOfActiveElements;
@@ -22220,7 +22217,7 @@ would probably have been easier.  To change it now though would cause compatibil
         // check graphics
         if(GraphicsFollow)
         {
-            if(!Track->CheckUserGraphics(1, InFile, CurDir + "\\" + USERGRAPHICS_DIR_NAME)) // include path to Graphics folder
+            if(!Track->CheckUserGraphics(1, InFile, CurDir / USERGRAPHICS_DIR_NAME)) // include path to Graphics folder
             {
                 InFile.close();
                 Utilities->CallLogPop(2187);
@@ -22413,7 +22410,7 @@ would probably have been easier.  To change it now though would cause compatibil
         // check graphics
         if(GraphicsFollow)
         {
-            if(!Track->CheckUserGraphics(2, InFile, CurDir + "\\" + USERGRAPHICS_DIR_NAME)) // include path to Graphics folder
+            if(!Track->CheckUserGraphics(2, InFile, CurDir / USERGRAPHICS_DIR_NAME)) // include path to Graphics folder
             {
                 InFile.close();
                 Utilities->CallLogPop(2189);
@@ -22939,7 +22936,7 @@ void TInterface::SaveErrorFile()
 */
 
     Screen->Cursor = TCursor(-11); // Hourglass;
-    AnsiString ErrorFileStr = CurDir + "\\errorlog.err";
+    std::filesystem::path ErrorFileStr = CurDir / "errorlog.err";
     std::ofstream ErrorFile(ErrorFileStr.c_str());
 
     if(!(ErrorFile.fail()))
@@ -23036,7 +23033,7 @@ void TInterface::SaveErrorFile()
         else
         {
             Utilities->SaveFileString(ErrorFile, "***Editing timetable - " + CreateEditTTTitle + "***");
-            if(!(SaveTimetableToErrorFile(1, ErrorFile, ErrorFileStr, CreateEditTTFileName)))
+            if(!(SaveTimetableToErrorFile(1, ErrorFile, ErrorFileStr.c_str(), CreateEditTTFileName)))
             {
                 Utilities->SaveFileString(ErrorFile, "***Editing timetable failed to save***");
             }
@@ -23230,17 +23227,19 @@ void TInterface::SaveTempTimetableFile(int Caller, AnsiString InFileName)
 // file actions in quick succession & been OK since then, but nevertheless keep the 10 retries before giving message to be on safe side
 {
     Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",SaveTempTimetableFile");
-    if((TempTTFileName != "") && FileExists(TempTTFileName))
+    if(!TempTTFileName.empty() && std::filesystem::exists(TempTTFileName))
     {
         std::filesystem::remove(TempTTFileName);
     }
     int TempTTFileNumber = 0;
 
-    while(FileExists(CurDir / std::filesystem::path{"TmpTT" + AnsiString(TempTTFileNumber) + ".tmp"}))
-    {
-        TempTTFileNumber++;
-    }
-    TempTTFileName = CurDir + "\\TmpTT" + AnsiString(TempTTFileNumber) + ".tmp";
+	const std::filesystem::path temp_file_{"TmpTT" + std::to_string(TempTTFileNumber) + ".tmp"};
+
+	while(std::filesystem::exists(CurDir / temp_file_))
+	{
+		TempTTFileNumber++;
+	}
+    TempTTFileName = temp_file_.c_str();
     int InHandle = FileOpen(InFileName, fmOpenRead);
     int Count = 0;
 
@@ -23256,12 +23255,12 @@ void TInterface::SaveTempTimetableFile(int Caller, AnsiString InFileName)
             return;
         }
     }
-    int OutHandle = FileCreate(TempTTFileName);
+    int OutHandle = FileCreate(TempTTFileName.c_str());
 
     Count = 0;
     while(OutHandle < 0) // sometimes fails, have 10 retries before giving message
     {
-        OutHandle = FileCreate(TempTTFileName);
+        OutHandle = FileCreate(TempTTFileName.c_str());
         Count++;
         Delay(3, 50); // 50mSec delay between tries
         if(Count > 10)
@@ -23529,18 +23528,12 @@ void TInterface::SaveAsSubroutine(int Caller)
                         Track->SaveUserGraphics(4, VecFile);
                     }
                     VecFile.close();
-                    SavedFileName = SaveRailwayDialog->FileName; // includes the full PrefDir
-                    if(SavedFileName != "") // shouldn't be "" at this stage but leave in as a safeguard
-                    {
-                        char LastChar = SavedFileName[SavedFileName.Length()];
-                        if((LastChar == 'y') || (LastChar == 'Y'))
-                        {
-                            RlyFile = true;
-                        }
-                        else
-                        {
-                            RlyFile = false;
-                        }
+					SavedFileName = SaveRailwayDialog->FileName.c_str(); // includes the full PrefDir
+                    std::string file_suffix_{SavedFileName.extension().generic_string()};
+					std::transform(file_suffix_.begin(), file_suffix_.end(), file_suffix_.begin(), [](auto c){return std::tolower(c);});
+                    if(!SavedFileName.empty()) // shouldn't be "" at this stage but leave in as a safeguard
+					{
+                        RlyFile = file_suffix_ == ".rly";
                     }
                     else
                     {
@@ -23970,18 +23963,18 @@ void TInterface::LoadUserGraphic(int Caller) // new at v2.4.0
         if(LoadUserGraphicDialog->Execute())
         {
             TrainController->LogEvent("LoadUserGraphic " + LoadUserGraphicDialog->FileName);
-            SelectedGraphicFileName = AnsiString(LoadUserGraphicDialog->FileName); // SelectedGraphicFileName is a class member
+            SelectedGraphicFileName = std::filesystem::path(LoadUserGraphicDialog->FileName.c_str()); // SelectedGraphicFileName is a class member
             TTrack::TUserGraphicMapEntry UGME;
             TTrack::TUserGraphicMap::iterator UGMIt = Track->UserGraphicMap.find(SelectedGraphicFileName);
             if(UGMIt == Track->UserGraphicMap.end()) // i.e. there isn't an entry for that filename so insert one, else take no action
             {
                 UGME.first = SelectedGraphicFileName;
                 TPicture *PicPtr = new TPicture;
-                PicPtr->LoadFromFile(SelectedGraphicFileName);
+                PicPtr->LoadFromFile(SelectedGraphicFileName.c_str());
                 UGME.second = PicPtr;
                 if(!Track->UserGraphicMap.insert(UGME).second) // if no failure then the new entry is inserted
                 {
-                    throw Exception("Map Insertion Error 1 - UserGraphicMap insertion failure for " + SelectedGraphicFileName);
+                    throw Exception(std::string{"Map Insertion Error 1 - UserGraphicMap insertion failure for " + SelectedGraphicFileName.generic_string()}.c_str());
                 }
             }
             Level2TrackMode = AddGraphic;
