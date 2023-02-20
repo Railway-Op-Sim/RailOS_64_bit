@@ -28,6 +28,8 @@
 #include <map>
 #include <vcl.h>
 #include <list>
+#include <sstream>
+#include <iomanip>
 
 #include "Utilities.h"
 
@@ -957,7 +959,7 @@ since OA panel only rebuilt every 2 secs when mouseup on panel the train could b
 /// returns true if the time complies with requirements
     bool CheckTimeValidity(int Caller, AnsiString TimeStr, TDateTime &Time);
 /// Generate a timetable analysis file in the 'Formatted Timetables' folder, return false if failed for any reason
-    bool CreateTTAnalysisFile(int Caller, AnsiString RailwayTitle, AnsiString TimetableTitle, AnsiString CurDir, bool ArrChecked, bool DepChecked, bool AtLocChecked, bool DirChecked, int ArrRange, int DepRange);
+    bool CreateTTAnalysisFile(int Caller, AnsiString RailwayTitle, AnsiString TimetableTitle, std::filesystem::path CurDir, bool ArrChecked, bool DepChecked, bool AtLocChecked, bool DirChecked, int ArrRange, int DepRange);
 /// New trains introduced with 'Snt' may be at a timetabled location or elsewhere. This function checks and returns true for at a timetabled location.
     bool IsSNTEntryLocated(int Caller, const TTrainDataEntry &TDEntry, AnsiString &LocationName);
 /// Checks the last two characters in HeadCode and returns true if both are digits

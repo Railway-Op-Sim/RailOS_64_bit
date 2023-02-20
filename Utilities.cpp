@@ -3,27 +3,22 @@
       BEWARE OF COMMENTS in .cpp files:  they were accurate when written but have
       sometimes been overtaken by changes and not updated
       Comments in .h files are believed to be accurate and up to date
-
       This is a source code file for "railway.exe", a railway operation
       simulator, written originally in Borland C++ Builder 4 Professional with
       later updates in Embarcadero C++Builder 10.2.
       Copyright (C) 2010 Albert Ball [original development]
-
       This program is free software: you can redistribute it and/or modify
       it under the terms of the GNU General Public License as published by
       the Free Software Foundation, either version 3 of the License, or
       (at your option) any later version.
-
       This program is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-
       You should have received a copy of the GNU General Public License
       along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 // ---------------------------------------------------------------------------
-
 #include <Classes.hpp>
 #include <Controls.hpp>
 #include <StdCtrls.hpp>
@@ -37,15 +32,11 @@
 #include <fstream>
 #include <vector>
 #include <vcl.h>
-
 #pragma hdrstop
-
 #include "Utilities.h"
-
 // ---------------------------------------------------------------------------
 #pragma package(smart_init)
 TUtilities *Utilities;
-
 // ---------------------------------------------------------------------------
 void TUtilities::CallLogPop(int Caller)
 // use this in case we have too many pops, in which case CallLog seems to be destroyed &
@@ -62,13 +53,11 @@ void TUtilities::CallLogPop(int Caller)
         CallLog.pop_back();
     }
 }
-
 // ---------------------------------------------------------------------------
 AnsiString TUtilities::DateTimeStamp()
 {
     return(TDateTime::CurrentDateTime().FormatString("dd/mm/yyyy hh:nn:ss"));
 }
-
 // ---------------------------------------------------------------------------
 AnsiString TUtilities::TimeStamp()
 {
@@ -95,7 +84,6 @@ AnsiString TUtilities::TimeStamp()
 // }
 // test
 // }
-
 // ---------------------------------------------------------------------------
 void TUtilities::FileDiagnostics(AnsiString Input) // test function
 {
@@ -103,7 +91,6 @@ void TUtilities::FileDiagnostics(AnsiString Input) // test function
     TestFile << Input.c_str() << '\n';
     TestFile.close();
 }
-
 // ---------------------------------------------------------------------------
 void TUtilities::SaveFileBool(std::ofstream &OutFile, bool SaveBool)
 {
@@ -116,13 +103,11 @@ void TUtilities::SaveFileBool(std::ofstream &OutFile, bool SaveBool)
         OutFile << 0 << '\n';
     }
 }
-
 // ---------------------------------------------------------------------------
 void TUtilities::SaveFileInt(std::ofstream &OutFile, int SaveInt)
 {
     OutFile << SaveInt << '\n';
 }
-
 // ---------------------------------------------------------------------------
 void TUtilities::SaveFileDouble(std::ofstream &OutFile, double SaveDouble)
 // if save directly as a double it is truncated to 6 digits, so convert to a
@@ -130,7 +115,6 @@ void TUtilities::SaveFileDouble(std::ofstream &OutFile, double SaveDouble)
 {
     SaveFileString(OutFile, AnsiString(SaveDouble));
 }
-
 // ---------------------------------------------------------------------------
 void TUtilities::SaveFileString(std::ofstream &OutFile, AnsiString SaveString)
 // If don't send a non- '\n' delimiter (using '\0' for convenience, tested in LoadFileString) then when string is null
@@ -140,7 +124,6 @@ void TUtilities::SaveFileString(std::ofstream &OutFile, AnsiString SaveString)
 {
     OutFile << SaveString.c_str() << '\0' << '\n';
 }
-
 // ---------------------------------------------------------------------------
 bool TUtilities::LoadFileBool(std::ifstream &InFile)
 // no need to worry about leading '\n' characters as the skipws (skip white space) flag is
@@ -157,7 +140,6 @@ bool TUtilities::LoadFileBool(std::ifstream &InFile)
         return(true);
     }
 }
-
 // ---------------------------------------------------------------------------
 int TUtilities::LoadFileInt(std::ifstream &InFile)
 // no need to worry about leading '\n' characters as the skipws (skip white space) flag is
@@ -167,7 +149,6 @@ int TUtilities::LoadFileInt(std::ifstream &InFile)
     InFile >> TempInt;
     return(TempInt);
 }
-
 // ---------------------------------------------------------------------------
 double TUtilities::LoadFileDouble(std::ifstream &InFile) // modified at v2.4.0 to change the decimal point character if necessary
 {
@@ -185,7 +166,6 @@ double TUtilities::LoadFileDouble(std::ifstream &InFile) // modified at v2.4.0 t
     }
     return(TempString.ToDouble());
 }
-
 // ---------------------------------------------------------------------------
 AnsiString TUtilities::LoadFileString(std::ifstream &InFile)
 {
@@ -204,7 +184,6 @@ AnsiString TUtilities::LoadFileString(std::ifstream &InFile)
     }
     return(TempString);
 }
-
 // ---------------------------------------------------------------------------
 bool TUtilities::CheckFileBool(std::ifstream &InFile)
 // no need to worry about leading '\n' characters as the skipws (skip white space) flag is
@@ -233,7 +212,6 @@ bool TUtilities::CheckFileBool(std::ifstream &InFile)
     }
     return(true);
 }
-
 // ---------------------------------------------------------------------------
 bool TUtilities::CheckFileInt(std::ifstream &InFile, int Lowest, int Highest)
 // no need to worry about leading '\n' characters as the skipws (skip white space) flag is
@@ -275,7 +253,6 @@ bool TUtilities::CheckFileInt(std::ifstream &InFile, int Lowest, int Highest)
     }
     return(true);
 }
-
 // ---------------------------------------------------------------------------
 bool TUtilities::CheckAndReadFileInt(std::ifstream &InFile, int Lowest, int Highest, int &OutInt)
 // no need to worry about leading '\n' characters as the skipws (skip white space) flag is
@@ -312,7 +289,6 @@ bool TUtilities::CheckAndReadFileInt(std::ifstream &InFile, int Lowest, int High
                 return(false);
             }
         }
-
         int TempInt = IntString.ToInt();
         if((TempInt < Lowest) || (TempInt > Highest))
         {
@@ -327,7 +303,6 @@ bool TUtilities::CheckAndReadFileInt(std::ifstream &InFile, int Lowest, int High
     }
 }
 // ---------------------------------------------------------------------------
-
 bool TUtilities::CheckFileDouble(std::ifstream &InFile)
 {
     try
@@ -364,9 +339,7 @@ bool TUtilities::CheckFileDouble(std::ifstream &InFile)
         return(false);
     }
 }
-
 // ---------------------------------------------------------------------------
-
 bool TUtilities::CheckStringDouble(AnsiString &DoubleString)
 {
     try
@@ -395,7 +368,6 @@ bool TUtilities::CheckStringDouble(AnsiString &DoubleString)
     }
 }
 // ---------------------------------------------------------------------------
-
 bool TUtilities::CheckFileString(std::ifstream &InFile)
 // Reads the next item and checks it as a string value up to either the '\0' delimiter
 // if there is one, in which case the '\0' is extracted but nothing more, or up to the next '\n',
@@ -431,7 +403,6 @@ bool TUtilities::CheckFileString(std::ifstream &InFile)
     return(true);
 }
 // ---------------------------------------------------------------------------
-
 bool TUtilities::CheckFileStringZeroDelimiter(std::ifstream &InFile)
 // Reads the next item and checks it as a legitimate string value up to the '\0' delimiter or end of file
 // if there is one, in which case the '\0' is extracted but nothing more.  There may or may not be a '\n' at the start, and if there
@@ -470,7 +441,6 @@ bool TUtilities::CheckFileStringZeroDelimiter(std::ifstream &InFile)
     return(true);
 }
 // ---------------------------------------------------------------------------
-
 bool TUtilities::CheckAndCompareFileString(std::ifstream &InFile, AnsiString InString)
 // Reads the next item and checks it as a string value up to either the '\0' delimiter
 // if there is one, in which case the '\0' is extracted but nothing more, or up to the next '\n',
@@ -525,7 +495,6 @@ bool TUtilities::CheckAndCompareFileString(std::ifstream &InFile, AnsiString InS
     return(true);
 }
 // ---------------------------------------------------------------------------
-
 bool TUtilities::CheckAndReadFileString(std::ifstream &InFile, AnsiString &OutString)
 // Reads the next item and checks it as a string value up to either the '\0' delimiter
 // if there is one, in which case the '\0' is extracted but nothing more, or up to the next '\n',
@@ -575,9 +544,7 @@ bool TUtilities::CheckAndReadFileString(std::ifstream &InFile, AnsiString &OutSt
     delete[] Buffer;
     return(true);
 }
-
 // ---------------------------------------------------------------------------
-
 bool TUtilities::CheckAndReadOneLineFromConfigFile(std::ifstream &InFile, AnsiString &OutString)
 // Reads the next item and checks it as a string value up to either the '\0' delimiter
 // if there is one, in which case the '\0' is extracted but nothing more, or up to the next '\n',
@@ -612,9 +579,7 @@ bool TUtilities::CheckAndReadOneLineFromConfigFile(std::ifstream &InFile, AnsiSt
     delete[] Buffer;
     return(true);
 }
-
 // ---------------------------------------------------------------------------
-
 bool TUtilities::ReadOneLineFromCouplingFile(std::ifstream &InFile, AnsiString &OutString)
 {
     OutString = "";
@@ -782,9 +747,7 @@ bool TUtilities::ReadOneLineFromCouplingFile(std::ifstream &InFile, AnsiString &
     delete[] Buffer;
     return(true);
 }
-
 // ---------------------------------------------------------------------------
-
 AnsiString TUtilities::Format96HHMMSS(TDateTime DateTime)
 // Formats a TDateTime into an AnsiString of the form hh:mm:ss where hh runs from 00 to 95 & resets when it reaches 96
 {
@@ -801,9 +764,7 @@ AnsiString TUtilities::Format96HHMMSS(TDateTime DateTime)
     }
     return (HourString + MinSecString);
 }
-
 // ---------------------------------------------------------------------------
-
 AnsiString TUtilities::Format96HHMM(TDateTime DateTime)
 // Formats a TDateTime into an AnsiString of the form hh:mm where hh runs from 00 to 95 & resets when it reaches 96
 {
@@ -820,9 +781,7 @@ AnsiString TUtilities::Format96HHMM(TDateTime DateTime)
     }
     return (HourString + MinString);
 }
-
 // ---------------------------------------------------------------------------
-
 AnsiString TUtilities::IncrementAnsiTimeOneMinute(AnsiString TimeVal)
 {
     AnsiString MinString = TimeVal.SubString(4,2);
@@ -847,7 +806,6 @@ AnsiString TUtilities::IncrementAnsiTimeOneMinute(AnsiString TimeVal)
     }
     return(HourString + ":" + MinString);
 }
-
 // ---------------------------------------------------------------------------
  std::filesystem::path LegacyDirectoryFinder(std::filesystem::path directory)
  {
@@ -856,11 +814,8 @@ AnsiString TUtilities::IncrementAnsiTimeOneMinute(AnsiString TimeVal)
 		{"Formatted_Timetables", "Formatted timetables"},
         {"Performance_Logs", "Performance logs"}
 	}};
-
 	const std::filesystem::path legacy_dir_{mapping_.at(directory.filename().generic_string())};
 	const std::filesystem::path legacy_path_{directory.parent_path() / legacy_dir_};
-
 	return (std::filesystem::exists(legacy_path_)) ? legacy_path_ : directory;
  }
-
 // ---------------------------------------------------------------------------

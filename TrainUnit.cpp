@@ -87,7 +87,7 @@ TTrain::TTrain(int Caller, int RearStartElementIn, int RearStartExitPosIn, AnsiS
     Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",TTrain," + AnsiString(RearStartElementIn) + "," +
                                  AnsiString(RearStartExitPosIn) + "," + AnsiString(InputCode) + "," + AnsiString(StartSpeedIn) + "," + AnsiString(MassIn) + "," +
                                  AnsiString(TrainModeIn));
-    // AutoControl = true;//all trains start in auto control
+	// AutoControl = true;//all trains start in auto control
     UpdateCounter = 0;
     TimeTimeLocArrived = false;
     Derailed = false;
@@ -10920,7 +10920,7 @@ bool TTrainController::TimetableIntegrityCheck(int Caller, std::filesystem::path
 {
     // Error messages mainly given in called functions, five are given here - empty file; inability to find a start time; timetable containing
     // a line that is too long; timetable containing too few lines; and timetable failed to open.
-    Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",TimetableIntegrityCheck," + AnsiString(FileName));
+	Utilities->CallLog.push_back(Utilities->TimeStamp() + "," + AnsiString(Caller) + ",TimetableIntegrityCheck," + AnsiString(FileName.c_str()));
     // new for v0.2b
     // compile ActiveTrackElementNameMap
     TTrack::TActiveTrackElementNameMapEntry ActiveTrackElementNameMapEntry;
@@ -16639,20 +16639,21 @@ void TTrainController::CreateFormattedTimetable(int Caller, AnsiString RailwayTi
        //end of formatted timetable types
 
 */
-
-	std::filesystem::path TTFileName = TDateTime::CurrentDateTime().FormatString("dd_mm_yyyy_hh_nn_ss");
+    auto t = std::time(nullptr);
+	auto tm = *std::localtime(&t);
+	std::ostringstream ss;
+	ss << std::put_time(&tm, "Timetable_%d_%m_%Y_%H_%M_%S");
 
     // format "16/06/2009 20:55:17"
     // avoid characters in filename:=   / \ : * ? " < > |
-	TTFileName = CurDir / std::filesystem::path{
-	LegacyDirectoryFinder("Formatted_Timetables") / "Timetable_" +
-	TTFileName + "_" + RailwayTitle + "_" + TimetableTitle + ".csv"
+	std::filesystem::path TTFileName = CurDir / std::filesystem::path{
+	LegacyDirectoryFinder("Formatted_Timetables") / std::filesystem::path{ss.str() + "_" + std::string{RailwayTitle.c_str()} + "_" + std::string{TimetableTitle.c_str()} + ".csv"}
 	};
 
 	const std::filesystem::path ShortTTName = TTFileName.filename();
 
-    ShowMessage("Creates two timetables named " + ShortTTName +
-                " in the 'Formatted timetables' folder, one in service order in '.csv' format, and one in chronological order in '.txt' format");
+	ShowMessage(std::string{"Creates two timetables named " + ShortTTName.generic_string() +
+                " in the 'Formatted timetables' folder, one in service order in '.csv' format, and one in chronological order in '.txt' format"}.c_str());
 
     Screen->Cursor = TCursor(-11); // Hourglass
 
@@ -17056,12 +17057,18 @@ void TTrainController::CreateFormattedTimetable(int Caller, AnsiString RailwayTi
         TTFile << '\n' << '\n';
     }
 
-    TTFile.close();
+	TTFile.close();
 
-    std::filesystem::path TTFileName2 = TDateTime::CurrentDateTime().FormatString("dd_mm_yyyy_hh_nn_ss");
+	t = std::time(nullptr);
+	tm = *std::localtime(&t);
+    ss.clear();
+	ss << std::put_time(&tm, "Timetable_%d_%m_%Y_%H_%M_%S");
 
-	TTFileName2 = CurDir / LegacyDirectoryFinder("Formatted_Timetables");
-	TTFileName2 /= std::filesystem::path{"Timetable_" + TTFileName2 + "_" + RailwayTitle + "_" + TimetableTitle + ".txt"};
+    // format "16/06/2009 20:55:17"
+    // avoid characters in filename:=   / \ : * ? " < > |
+	std::filesystem::path TTFileName2 = CurDir / std::filesystem::path{
+	LegacyDirectoryFinder("Formatted_Timetables") / std::filesystem::path{ss.str() + "_" + std::string{RailwayTitle.c_str()} + "_" + std::string{TimetableTitle.c_str()} + ".txt"}
+	};
 
     std::ofstream TTFile2(TTFileName2.c_str()); //chronological timetable
 
@@ -17125,7 +17132,7 @@ void TTrainController::CreateFormattedTimetable(int Caller, AnsiString RailwayTi
 
 // ---------------------------------------------------------------------------
 
-bool TTrainController::CreateTTAnalysisFile(int Caller, AnsiString RailwayTitle, AnsiString TimetableTitle, AnsiString CurDir, bool ArrChecked, bool DepChecked,
+bool TTrainController::CreateTTAnalysisFile(int Caller, AnsiString RailwayTitle, AnsiString TimetableTitle, std::filesystem::path CurDir, bool ArrChecked, bool DepChecked,
                                             bool AtLocChecked, bool DirChecked, int ArrRange, int DepRange)
 {
 
@@ -17951,12 +17958,16 @@ j) all other finish entries (all link to another service) are ignored as will be
 //end of debugging section
 */
         //declare pointers for use in printouts
-        TLocServiceTimesVector::iterator Ptr1, Ptr2;
+		TLocServiceTimesVector::iterator Ptr1, Ptr2;
 
-        //set up the output file
-		std::string TTFileName3 = TDateTime::CurrentDateTime().FormatString("dd_mm_yyyy_hh_nn_ss");
-		TTFileName3 = CurDir / LegacyDirectoryFinder("Formatted_Timetables");
-		TTFileName3 /= std::filesystem::path{"Conflict_Analysis"} / std::filesystem::path{TTFileName3 + "_" + RailwayTitle + "_" + TimetableTitle + ".csv"};
+        auto t = std::time(nullptr);
+		auto tm = *std::localtime(&t);
+		std::ostringstream ss;
+		ss << std::put_time(&tm, std::string{"Timetable_%d_%m_%Y_%H_%M_%S_" + std::string{RailwayTitle.c_str()} + "_" + std::string{TimetableTitle.c_str()} + ".csv"}.c_str());
+
+		//set up the output file
+		std::filesystem::path TTFileName3 = CurDir / LegacyDirectoryFinder("Formatted_Timetables");
+		TTFileName3 /= std::filesystem::path{"Conflict_Analysis"} / std::filesystem::path{ss.str()};
 
         std::ofstream TTFile3(TTFileName3.c_str());
 
@@ -19366,7 +19377,7 @@ different to the train's front element name (whether null or not) (no report), a
 
     catch(const Exception &e) //non error catch
     {
-        std::filesystem::path TTErrorFileName{"Analysis Error.txt"};
+        std::filesystem::path TTErrorFileName{"Analysis_Error.txt"};
         TTErrorFileName = CurDir / LegacyDirectoryFinder("Formatted_Timetables") / TTErrorFileName;
         std::ofstream TTError(TTErrorFileName.c_str());
         if(TTError == 0)

@@ -3243,20 +3243,21 @@ bool TTrack::CheckUserGraphics(int Caller, std::ifstream &VecFile, std::filesyst
         return(false);
     }
     // filename in Graphics folder, then HPos, then VPos
-    std::filesystem::path FileName{""}, TempStr{""};
+	AnsiString FileName{""}, TempStr{""};
 
     for(int x = 0; x < NumberOfGraphics; x++)
     {
         TPicture *TempPicture = new TPicture;
         try
-        {
-            if(!Utilities->CheckAndReadFileString(VecFile, FileName.c_str()))
+		{
+            if(!Utilities->CheckAndReadFileString(VecFile, FileName))
             {
                 Utilities->CallLogPop(2169);
                 delete TempPicture;
                 return(false);
-            }
-            TempPicture->LoadFromFile({GraphicsPath / FileName}.c_str()); // only loaded to check and catch errors
+			}
+            const std::filesystem::path file_name_{FileName.c_str()};
+            TempPicture->LoadFromFile((GraphicsPath / file_name_).c_str()); // only loaded to check and catch errors
             delete TempPicture;
             if(!Utilities->CheckFileInt(VecFile, -2000000, 2000000)) // HPos, allow plenty of scope
             {
@@ -3270,18 +3271,19 @@ bool TTrack::CheckUserGraphics(int Caller, std::ifstream &VecFile, std::filesyst
             }
         }
         catch(const EInvalidGraphic &e)  //non error catch
-        {
+		{
             //move file pointer to end of graphic section for later checks in session files
-			Utilities->CheckAndReadFileString(VecFile, TempStr.c_str()); //get rid of HPos
-            Utilities->CheckAndReadFileString(VecFile, TempStr.c_str()); //VPos
+			Utilities->CheckAndReadFileString(VecFile, TempStr); //get rid of HPos
+			Utilities->CheckAndReadFileString(VecFile, TempStr); //VPos
             for(int y = x + 1; y < NumberOfGraphics; y++)
             {
-				Utilities->CheckAndReadFileString(VecFile, TempStr.c_str()); //next FileName
-				Utilities->CheckAndReadFileString(VecFile, TempStr.c_str()); //next VPos
-                Utilities->CheckAndReadFileString(VecFile, TempStr.c_str()); //next VPos
-            }
-			ShowMessage(std::string{FileName.generic_string() +
-                        " has an incorrect file format, user graphics can't be loaded. Ensure that all user graphic files are valid with extension .bmp, .gif, .jpg, or .png"}.c_str());
+				Utilities->CheckAndReadFileString(VecFile, TempStr); //next FileName
+				Utilities->CheckAndReadFileString(VecFile, TempStr); //next VPos
+                Utilities->CheckAndReadFileString(VecFile, TempStr); //next VPos
+			}
+			const std::filesystem::path file_name_{FileName.c_str()};
+			ShowMessage((file_name_.generic_string() +
+						std::string{" has an incorrect file format, user graphics can't be loaded. Ensure that all user graphic files are valid with extension .bmp, .gif, .jpg, or .png"}).c_str());
             Utilities->CallLogPop(2172);
             delete TempPicture;
             return(true);      //for these file errors allow railway or session to be loaded, changed at v2.6.0
@@ -3289,16 +3291,17 @@ bool TTrack::CheckUserGraphics(int Caller, std::ifstream &VecFile, std::filesyst
         catch(const Exception &e) //non error catch
         {
             //move file pointer to end of graphic section for later checks in session files
-			Utilities->CheckAndReadFileString(VecFile, TempStr.c_str()); //get rid of HPos
-            Utilities->CheckAndReadFileString(VecFile, TempStr.c_str()); //VPos
+			Utilities->CheckAndReadFileString(VecFile, TempStr); //get rid of HPos
+			Utilities->CheckAndReadFileString(VecFile, TempStr); //VPos
             for(int y = x + 1; y < NumberOfGraphics; y++)
             {
-				Utilities->CheckAndReadFileString(VecFile, TempStr.c_str()); //next FileName
-				Utilities->CheckAndReadFileString(VecFile, TempStr.c_str()); //next VPos
-				Utilities->CheckAndReadFileString(VecFile, TempStr.c_str()); //next VPos
-            }
-			ShowMessage("Unable to load user graphic files, ensure that " + FileName.c_str() +
-                        " exists in the 'Graphics' folder and that it is has extension .bmp, .gif, .jpg, or .png.");
+				Utilities->CheckAndReadFileString(VecFile, TempStr); //next FileName
+				Utilities->CheckAndReadFileString(VecFile, TempStr); //next VPos
+				Utilities->CheckAndReadFileString(VecFile, TempStr); //next VPos
+			}
+			const std::filesystem::path file_name_{FileName.c_str()};
+			ShowMessage(std::string{"Unable to load user graphic files, ensure that " + file_name_.generic_string() +
+                        " exists in the 'Graphics' folder and that it is has extension .bmp, .gif, .jpg, or .png."}.c_str());
             Utilities->CallLogPop(2173);
             delete TempPicture;
             return(true);      //for these file errors allow railway or session to be loaded, changed at v2.6.0
@@ -11134,7 +11137,7 @@ void TTrack::SaveUserGraphics(int Caller, std::ofstream &VecFile)
 	for(auto user_graphic : UserGraphicVector)
 	{
         JustFileName = user_graphic.FileName.stem();
-		Utilities->SaveFileString(VecFile, JustFileName,c_str());
+		Utilities->SaveFileString(VecFile, JustFileName.c_str());
 		Utilities->SaveFileInt(VecFile, user_graphic.HPos);
         Utilities->SaveFileInt(VecFile, user_graphic.VPos);
     }
